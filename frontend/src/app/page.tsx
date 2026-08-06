@@ -1,5 +1,10 @@
-import { HomeClient } from '@/components/HomeClient';
+import { Suspense } from 'react';
+import { HomeClient } from '@/components/landing/HomeClient';
 
 export default function Page() {
-  return <HomeClient />;
+  return (
+    <Suspense>
+      <HomeClient />
+    </Suspense>
+  );
 }
