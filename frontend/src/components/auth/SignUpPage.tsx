@@ -33,14 +33,15 @@ export function SignUpPage() {
     );
   };
 
-  const inputClass = 'w-full bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus:border-[#E9C349] rounded-xl py-3 text-sm text-white outline-none transition-all placeholder-gray-700';
-  const labelClass = 'block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5';
+  const inputClass = 'w-full bg-[var(--bg-input)] border border-[var(--border-default)] hover:border-[var(--border-strong)] focus:border-[#E9C349] rounded-xl py-3 text-sm text-[var(--text-primary)] outline-none transition-all placeholder-[var(--text-faint)]';
+  const labelClass = 'block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-1.5';
+  const iconClass = 'w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]';
 
   return (
-    <div className="h-screen overflow-hidden flex bg-[#0A0A0A]">
+    <div className="h-screen overflow-hidden flex bg-[var(--bg-base)]">
 
       {/* ── LEFT  ·  Form panel ──────────────────────────────────── */}
-      <div className="flex-1 relative lg:bg-[#0F0F11]">
+      <div className="flex-1 relative lg:bg-[var(--bg-surface)]">
 
         {/* Mobile blurred bg */}
         <div className="absolute inset-0 lg:hidden">
@@ -72,12 +73,12 @@ export function SignUpPage() {
             </div>
 
             {/* Heading */}
-            <h1 className="text-[2rem] font-serif font-bold text-white leading-tight mb-1">
+            <h1 className="text-[2rem] font-serif font-bold text-[var(--text-primary)] leading-tight mb-1">
               {currentLang === 'en' ? 'Create your account'
                 : currentLang === 'am' ? 'አካውንትዎን ይፍጠሩ'
                 : 'Akkaawuntii kee Uumi'}
             </h1>
-            <p className="text-sm text-gray-500 mb-7">
+            <p className="text-sm text-[var(--text-secondary)] mb-7">
               {currentLang === 'en' ? 'Join Ethiopia\'s premier beauty training institute.'
                 : currentLang === 'am' ? 'ሀገሪቱን ቀዳሚ የውበት ሙያ ተቋም ይቀላቀሉ።'
                 : 'Dhaabbata leenjii miidhaginaa kutaa-duraatti biyyatti makama.'}
@@ -101,7 +102,7 @@ export function SignUpPage() {
               <div>
                 <label className={labelClass}>{t.fullName} *</label>
                 <div className="relative">
-                  <User className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
+                  <User className={iconClass} />
                   <input type="text" required autoComplete="name"
                     value={fullName} onChange={(e) => setFullName(e.target.value)}
                     placeholder="Bethlehem Worku"
@@ -114,7 +115,7 @@ export function SignUpPage() {
                 <div>
                   <label className={labelClass}>{t.email} *</label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" />
+                    <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                     <input type="email" required autoComplete="email"
                       value={email} onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@mail.com"
@@ -124,7 +125,7 @@ export function SignUpPage() {
                 <div>
                   <label className={labelClass}>{t.phone}</label>
                   <div className="relative">
-                    <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" />
+                    <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                     <input type="tel" autoComplete="tel"
                       value={phone} onChange={(e) => setPhone(e.target.value)}
                       placeholder="+251 9…"
@@ -143,7 +144,7 @@ export function SignUpPage() {
                       placeholder="••••••••"
                       className={`${inputClass} px-4 pr-10`} />
                     <button type="button" onClick={() => setShowPw(!showPw)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-300 transition-colors">
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
                       {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -166,7 +167,7 @@ export function SignUpPage() {
               </button>
             </form>
 
-            <p className="mt-7 text-center text-sm text-gray-600">
+            <p className="mt-7 text-center text-sm text-[var(--text-muted)]">
               {t.haveAcct}{' '}
               <Link href="/auth/signin" className="text-[#E9C349] font-semibold hover:brightness-110 hover:underline underline-offset-2 transition-all">
                 {t.goSignIn} →

@@ -152,10 +152,10 @@ export const AdminReportsModal: React.FC<AdminReportsModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-4xl bg-[#FAF8F5] dark:bg-[#121214] text-[var(--text-primary)] rounded-3xl shadow-2xl border border-[#E9C349]/40 overflow-hidden my-6 flex flex-col max-h-[90vh]"
+          className="relative w-full max-w-4xl bg-[#FAF8F5] dark:bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-3xl shadow-2xl border border-[#E9C349]/40 overflow-hidden my-6 flex flex-col max-h-[90vh]"
         >
           {/* Header */}
-          <div className="bg-[#111111] p-6 text-white border-b border-[#E9C349]/30 flex items-center justify-between shrink-0">
+          <div className="bg-[var(--bg-base)] p-6 text-white border-b border-[#E9C349]/30 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#D4AF37] to-[#F5D468] text-black flex items-center justify-center shadow-lg">
                 <FileSpreadsheet className="w-5 h-5" />
@@ -197,14 +197,14 @@ export const AdminReportsModal: React.FC<AdminReportsModalProps> = ({
           </div>
 
           {/* Navigation Tabs */}
-          <div className="bg-[#161619] px-6 py-2.5 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0 gap-4 overflow-x-auto">
+          <div className="bg-[var(--bg-panel)] px-6 py-2.5 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0 gap-4 overflow-x-auto">
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setActiveTab('students')}
                 className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 ${
                   activeTab === 'students'
                     ? 'bg-[#E9C349] text-black shadow-md'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
                 }`}
               >
                 <Users className="w-4 h-4" />
@@ -215,7 +215,7 @@ export const AdminReportsModal: React.FC<AdminReportsModalProps> = ({
                 className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 ${
                   activeTab === 'attendance'
                     ? 'bg-[#E9C349] text-black shadow-md'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
                 }`}
               >
                 <Calendar className="w-4 h-4" />
@@ -226,7 +226,7 @@ export const AdminReportsModal: React.FC<AdminReportsModalProps> = ({
                 className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 ${
                   activeTab === 'payments'
                     ? 'bg-[#E9C349] text-black shadow-md'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
                 }`}
               >
                 <CreditCard className="w-4 h-4" />
@@ -243,13 +243,13 @@ export const AdminReportsModal: React.FC<AdminReportsModalProps> = ({
                   placeholder="Filter records..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-black/40 text-xs pl-8 pr-3 py-1.5 rounded-xl border border-white/10 text-white placeholder-gray-400 outline-none focus:border-[#E9C349]"
+                  className="bg-black/40 text-xs pl-8 pr-3 py-1.5 rounded-xl border border-[var(--border-default)] text-white placeholder-gray-400 outline-none focus:border-[#E9C349]"
                 />
               </div>
               <select
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
-                className="bg-black/40 text-xs px-3 py-1.5 rounded-xl border border-white/10 text-white outline-none focus:border-[#E9C349]"
+                className="bg-black/40 text-xs px-3 py-1.5 rounded-xl border border-[var(--border-default)] text-white outline-none focus:border-[#E9C349]"
               >
                 <option value="All">All Courses</option>
                 <option value="Hair Dressing">Hair Dressing</option>
@@ -263,10 +263,10 @@ export const AdminReportsModal: React.FC<AdminReportsModalProps> = ({
           {/* Table Content Area */}
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'students' && (
-              <div className="overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-white dark:bg-[#1A1A1E]">
+              <div className="overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-white dark:bg-[var(--bg-card)]">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-[#111111] text-[#E9C349] uppercase tracking-wider font-mono text-[10px]">
+                    <tr className="bg-[var(--bg-base)] text-[#E9C349] uppercase tracking-wider font-mono text-[10px]">
                       <th className="p-3">ID</th>
                       <th className="p-3">Student Name</th>
                       <th className="p-3">Course Program</th>
@@ -302,10 +302,10 @@ export const AdminReportsModal: React.FC<AdminReportsModalProps> = ({
             )}
 
             {activeTab === 'attendance' && (
-              <div className="overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-white dark:bg-[#1A1A1E]">
+              <div className="overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-white dark:bg-[var(--bg-card)]">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-[#111111] text-[#E9C349] uppercase tracking-wider font-mono text-[10px]">
+                    <tr className="bg-[var(--bg-base)] text-[#E9C349] uppercase tracking-wider font-mono text-[10px]">
                       <th className="p-3">Record ID</th>
                       <th className="p-3">Student</th>
                       <th className="p-3">Course</th>
@@ -341,10 +341,10 @@ export const AdminReportsModal: React.FC<AdminReportsModalProps> = ({
             )}
 
             {activeTab === 'payments' && (
-              <div className="overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-white dark:bg-[#1A1A1E]">
+              <div className="overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-white dark:bg-[var(--bg-card)]">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-[#111111] text-[#E9C349] uppercase tracking-wider font-mono text-[10px]">
+                    <tr className="bg-[var(--bg-base)] text-[#E9C349] uppercase tracking-wider font-mono text-[10px]">
                       <th className="p-3">Receipt No</th>
                       <th className="p-3">Student Name</th>
                       <th className="p-3">Course</th>
@@ -379,7 +379,7 @@ export const AdminReportsModal: React.FC<AdminReportsModalProps> = ({
           </div>
 
           {/* Footer Bar */}
-          <div className="bg-white dark:bg-[#161618] border-t border-[var(--border-default)] p-4 px-6 flex items-center justify-between text-xs text-[var(--text-muted)] shrink-0">
+          <div className="bg-white dark:bg-[var(--bg-panel)] border-t border-[var(--border-default)] p-4 px-6 flex items-center justify-between text-xs text-[var(--text-muted)] shrink-0">
             <span className="font-mono">
               Database Sync: <strong className="text-emerald-500">Prisma PostgreSQL Verified</strong>
             </span>

@@ -50,15 +50,11 @@ export function useAuthPage() {
   const [currentLang, setCurrentLang] = useState<Language>('en');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Hydrate lang + theme from localStorage on mount
+  // Hydrate lang from localStorage on mount
   useEffect(() => {
     try {
       const lang = localStorage.getItem('hc-lang') as Language | null;
       if (lang) setCurrentLang(lang);
-      const theme = localStorage.getItem('hc-theme') || 'dark';
-      const root = document.documentElement;
-      root.setAttribute('data-theme', theme);
-      root.classList.toggle('dark', theme !== 'light');
     } catch { /* ignore */ }
   }, []);
 
@@ -108,7 +104,16 @@ export function useAuthPage() {
       setIsLoading(false);
       onError(data.error || 'Sign in failed.');
     } catch {
-      // Backend unreachable — fall back to mock sign-in
+      // Backend unreachable — match exact demo credentials first
+      const demoMatch = Object.values(DEMO_USERS).find(
+        (u) => u.email.toLowerCase() === email.toLowerCase()
+      );
+      if (demoMatch) {
+        setIsLoading(false);
+        saveUserAndRedirect(demoMatch);
+        return;
+      }
+      // Fall back to a generic mock for any other email
       const role =
         email.toLowerCase().includes('admin') ? 'Admin'
         : email.toLowerCase().includes('instructor') ? 'Instructor'
