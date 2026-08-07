@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Lock, Mail, Eye, EyeOff, ArrowRight, Sparkles, ArrowLeft } from 'lucide-react';
-import { useAuthPage } from './useAuth';
+import { useAuthPage, DEMO_USERS } from './useAuth';
 
 export function SignInPage() {
-  const { currentLang, isLoading, t, apiSignIn } = useAuthPage();
+  const { currentLang, isLoading, t, apiSignIn, handleDemo } = useAuthPage();
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +22,7 @@ export function SignInPage() {
   };
 
   return (
-    <div className="h-screen overflow-hidden flex bg-[#0A0A0A]">
+    <div className="h-screen overflow-hidden flex bg-[var(--bg-base)]">
 
       {/* ── LEFT  ·  Image panel (desktop) ─────────────────────── */}
       <div className="hidden lg:flex lg:w-[52%] relative flex-shrink-0">
@@ -82,7 +82,7 @@ export function SignInPage() {
       </div>
 
       {/* ── RIGHT  ·  Form panel ─────────────────────────────────── */}
-      <div className="flex-1 relative lg:bg-[#0F0F11]">
+      <div className="flex-1 relative lg:bg-[var(--bg-surface)]">
 
         {/* Mobile blurred bg */}
         <div className="absolute inset-0 lg:hidden">
@@ -114,12 +114,12 @@ export function SignInPage() {
             </div>
 
             {/* Heading */}
-            <h1 className="text-[2rem] font-serif font-bold text-white leading-tight mb-1">
+            <h1 className="text-[2rem] font-serif font-bold text-[var(--text-primary)] leading-tight mb-1">
               {currentLang === 'en' ? 'Welcome back'
                 : currentLang === 'am' ? 'እንኳን ደህና መጡ'
                 : 'Baga nagaan dhuftan'}
             </h1>
-            <p className="text-sm text-gray-500 mb-8">
+            <p className="text-sm text-[var(--text-secondary)] mb-8">
               {currentLang === 'en' ? 'Sign in to access your training portal.'
                 : currentLang === 'am' ? 'ወደ ስልጠና ፖርታልዎ ለመዳረስ ይግቡ።'
                 : "Gara portal leenjii keessanitti seenuuf galmaa'aa."}
@@ -138,16 +138,16 @@ export function SignInPage() {
 
               {/* Email */}
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                <label className="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
                   {t.email}
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
+                  <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                   <input
                     type="email" required autoComplete="email"
                     value={email} onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@darebeauty.edu.et"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus:border-[#E9C349] rounded-xl py-3.5 pl-11 pr-4 text-sm text-white outline-none transition-all placeholder-gray-700"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-default)] hover:border-[var(--border-strong)] focus:border-[#E9C349] rounded-xl py-3.5 pl-11 pr-4 text-sm text-[var(--text-primary)] outline-none transition-all placeholder-[var(--text-faint)]"
                   />
                 </div>
               </div>
@@ -155,7 +155,7 @@ export function SignInPage() {
               {/* Password */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                  <label className="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
                     {t.password}
                   </label>
                   <button type="button" onClick={() => alert('Reset email sent.')}
@@ -164,15 +164,15 @@ export function SignInPage() {
                   </button>
                 </div>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
+                  <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                   <input
                     type={showPw ? 'text' : 'password'} required autoComplete="current-password"
                     value={password} onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus:border-[#E9C349] rounded-xl py-3.5 pl-11 pr-11 text-sm text-white outline-none transition-all"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-default)] hover:border-[var(--border-strong)] focus:border-[#E9C349] rounded-xl py-3.5 pl-11 pr-11 text-sm text-[var(--text-primary)] outline-none transition-all"
                   />
                   <button type="button" onClick={() => setShowPw(!showPw)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-300 transition-colors">
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
@@ -181,7 +181,7 @@ export function SignInPage() {
               {/* Remember */}
               <div className="flex items-center space-x-2.5">
                 <input type="checkbox" id="rm" defaultChecked className="accent-[#E9C349] w-4 h-4 cursor-pointer rounded" />
-                <label htmlFor="rm" className="text-xs text-gray-500 cursor-pointer">{t.remember}</label>
+                <label htmlFor="rm" className="text-xs text-[var(--text-muted)] cursor-pointer">{t.remember}</label>
               </div>
 
               {/* Submit */}
@@ -194,12 +194,44 @@ export function SignInPage() {
             </form>
 
             {/* Switch */}
-            <p className="mt-8 text-center text-sm text-gray-600">
+            <p className="mt-8 text-center text-sm text-[var(--text-muted)]">
               {t.noAcct}{' '}
               <Link href="/auth/signup" className="text-[#E9C349] font-semibold hover:brightness-110 underline-offset-2 hover:underline transition-all">
                 {t.goSignUp} →
               </Link>
             </p>
+
+            {/* Demo logins */}
+            <div className="mt-6 pt-6 border-t border-[var(--border-subtle)]">
+              <p className="text-center text-[11px] font-mono text-[var(--text-muted)] uppercase tracking-widest mb-3">
+                {t.demo}
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    { role: 'Admin'      as const, color: 'text-amber-400',   label: currentLang === 'am' ? 'አድሚን'   : currentLang === 'om' ? 'Bulchiinsa' : 'Admin'      },
+                    { role: 'Instructor' as const, color: 'text-emerald-400', label: currentLang === 'am' ? 'አስተማሪ' : currentLang === 'om' ? 'Barsiisaa'  : 'Instructor' },
+                    { role: 'Student'   as const,  color: 'text-[#E9C349]',   label: currentLang === 'am' ? 'ተማሪ'   : currentLang === 'om' ? 'Barataa'    : 'Student'    },
+                  ]
+                ).map(({ role, color, label }) => (
+                  <button
+                    key={role}
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => handleDemo(role)}
+                    className="flex flex-col items-center py-2.5 px-2 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-default)] hover:border-[#E9C349]/60 hover:bg-[var(--bg-card)] transition-all disabled:opacity-50 group"
+                  >
+                    <span className={`text-[11px] font-bold font-mono ${color}`}>{label}</span>
+                    <span className="text-[9px] text-[var(--text-muted)] mt-0.5 truncate w-full text-center leading-tight">
+                      {DEMO_USERS[role].email}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-center text-[10px] text-[var(--text-muted)] mt-2 font-mono">
+                {currentLang === 'am' ? 'ማናቸውም የይለፍ ቃል ይቀበላል' : currentLang === 'om' ? 'Jecha darbiinsaa kamiyyuu ni fudhatama' : 'Any password accepted for demo'}
+              </p>
+            </div>
           </div>
         </div>
       </div>

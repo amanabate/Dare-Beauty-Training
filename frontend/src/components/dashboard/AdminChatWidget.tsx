@@ -203,7 +203,7 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({
           onClick={handleToggle}
           className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 relative ${
             isOpen
-              ? 'bg-[#111111] text-[#E9C349] border-2 border-[#E9C349]'
+              ? 'bg-[var(--bg-base)] text-[#E9C349] border-2 border-[#E9C349]'
               : 'bg-gradient-to-tr from-[#D4AF37] via-[#E9C349] to-[#F5D468] text-[#0F0F10] shadow-[0_4px_25px_rgba(212,175,55,0.45)]'
           }`}
           aria-label="Toggle Admin AI Assistant"
@@ -254,10 +254,10 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.92 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="absolute bottom-18 right-0 w-[calc(100vw-2rem)] sm:w-[420px] h-[560px] max-h-[80vh] bg-[#FAFAFA] dark:bg-[#121214] text-[var(--text-primary)] rounded-2xl shadow-2xl border border-[var(--border-default)] flex flex-col overflow-hidden backdrop-blur-xl"
+            className="absolute bottom-18 right-0 w-[calc(100vw-2rem)] sm:w-[420px] h-[560px] max-h-[80vh] bg-[#FAFAFA] dark:bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl shadow-2xl border border-[var(--border-default)] flex flex-col overflow-hidden backdrop-blur-xl"
           >
             {/* Header */}
-            <div className="px-4 py-3.5 bg-[#111111] text-white border-b border-[#E9C349]/30 flex items-center justify-between shrink-0">
+            <div className="px-4 py-3.5 bg-[var(--bg-base)] text-white border-b border-[#E9C349]/30 flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-3">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#D4AF37] to-[#F5D468] text-black flex items-center justify-center shadow-md shrink-0">
                   <Bot className="w-5 h-5" />
@@ -341,7 +341,7 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({
                     className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold ${
                       msg.sender === 'user'
                         ? 'bg-[#E9C349] text-black'
-                        : 'bg-[#111111] text-[#E9C349] border border-[#E9C349]/40'
+                        : 'bg-[var(--bg-base)] text-[#E9C349] border border-[#E9C349]/40'
                     }`}
                   >
                     {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
@@ -351,7 +351,7 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({
                     className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
                       msg.sender === 'user'
                         ? 'bg-[#E9C349] text-[#0F0F10] font-medium rounded-tr-xs shadow-sm'
-                        : 'bg-white dark:bg-[#1E1E22] border border-[var(--border-default)] text-[var(--text-primary)] rounded-tl-xs shadow-sm'
+                        : 'bg-white dark:bg-[var(--bg-card)] border border-[var(--border-default)] text-[var(--text-primary)] rounded-tl-xs shadow-sm'
                     }`}
                   >
                     <div className="whitespace-pre-line">
@@ -402,10 +402,10 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({
               {/* Typing Indicator */}
               {isLoading && (
                 <div className="flex items-start space-x-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-[#111111] text-[#E9C349] border border-[#E9C349]/40 flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-lg bg-[var(--bg-base)] text-[#E9C349] border border-[#E9C349]/40 flex items-center justify-center shrink-0">
                     <Bot className="w-4 h-4" />
                   </div>
-                  <div className="bg-white dark:bg-[#1E1E22] border border-[var(--border-default)] rounded-2xl rounded-tl-xs px-4 py-3 flex items-center space-x-1.5">
+                  <div className="bg-white dark:bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl rounded-tl-xs px-4 py-3 flex items-center space-x-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '0ms' }}></span>
                     <span className="w-2 h-2 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '150ms' }}></span>
                     <span className="w-2 h-2 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '300ms' }}></span>
@@ -429,7 +429,7 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({
                     onClick={() => {
                       setInput(pq);
                     }}
-                    className="whitespace-nowrap px-2.5 py-1 text-[11px] bg-white dark:bg-[#1C1C20] border border-[var(--border-default)] hover:border-[#E9C349] text-[var(--text-secondary)] hover:text-[#D4AF37] rounded-full transition-all shrink-0"
+                    className="whitespace-nowrap px-2.5 py-1 text-[11px] bg-white dark:bg-[var(--bg-card)] border border-[var(--border-default)] hover:border-[#E9C349] text-[var(--text-secondary)] hover:text-[#D4AF37] rounded-full transition-all shrink-0"
                   >
                     {pq}
                   </button>
@@ -438,13 +438,13 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({
             </div>
 
             {/* Input Form Footer */}
-            <form onSubmit={handleSend} className="p-3 bg-white dark:bg-[#161618] border-t border-[var(--border-default)] flex items-center space-x-2 shrink-0">
+            <form onSubmit={handleSend} className="p-3 bg-white dark:bg-[var(--bg-panel)] border-t border-[var(--border-default)] flex items-center space-x-2 shrink-0">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about students, courses, payments..."
-                className="flex-1 bg-gray-100 dark:bg-[#222226] text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-[#E9C349] focus:bg-white dark:focus:bg-[#1A1A1E] outline-none transition-all text-[var(--text-primary)] placeholder-[var(--text-muted)]"
+                className="flex-1 bg-gray-100 dark:bg-[#222226] text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-[#E9C349] focus:bg-white dark:focus:bg-[var(--bg-card)] outline-none transition-all text-[var(--text-primary)] placeholder-[var(--text-muted)]"
               />
               <button
                 type="submit"

@@ -2,18 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { StudentDashboard } from '@/components/dashboard/StudentDashboard';
-import { Language, ThemeMode, UserAccount } from '@/types';
+import { Language, UserAccount } from '@/types';
+import { useTheme } from '@/components/shared/ThemeProvider';
 
 export default function StudentDashboardPage() {
+  const { themeMode, setThemeMode } = useTheme();
   const [currentLang, setCurrentLang] = useState<Language>('en');
-  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const [user, setUser] = useState<UserAccount | null>(null);
 
   useEffect(() => {
     try {
-      const savedTheme = localStorage.getItem('hc-theme') as ThemeMode | null;
-      if (savedTheme) setThemeMode(savedTheme);
-
       const savedUser = localStorage.getItem('dare_user_account');
       if (savedUser) setUser(JSON.parse(savedUser));
 
@@ -21,13 +19,6 @@ export default function StudentDashboardPage() {
       if (savedLang) setCurrentLang(savedLang);
     } catch { /* ignore */ }
   }, []);
-
-  useEffect(() => {
-    try { localStorage.setItem('hc-theme', themeMode); } catch { /* ignore */ }
-    const root = document.documentElement;
-    root.setAttribute('data-theme', themeMode);
-    root.classList.toggle('dark', themeMode !== 'light');
-  }, [themeMode]);
 
   const handleChangeLang = (lang: Language) => {
     setCurrentLang(lang);

@@ -176,7 +176,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       {/* Bell Icon Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-xl bg-[#111111] dark:bg-[#1A1A1E] text-gray-300 hover:text-[#E9C349] border border-[#E9C349]/30 hover:border-[#E9C349] transition-all shadow-sm focus:outline-none"
+        className="relative p-2 rounded-xl bg-[var(--bg-base)] dark:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[#E9C349] border border-[#E9C349]/30 hover:border-[#E9C349] transition-all shadow-sm focus:outline-none"
         title="Notifications Center"
       >
         <Bell className="w-4 h-4" />
@@ -184,7 +184,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-red-600 text-white font-mono font-bold text-[9px] leading-none shadow-md flex items-center justify-center min-w-[16px]"
+            className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-red-600 text-[var(--text-primary)] font-mono font-bold text-[9px] leading-none shadow-md flex items-center justify-center min-w-[16px]"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </motion.span>
@@ -206,16 +206,16 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.96 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-0 mt-3 w-80 sm:w-96 bg-[#FAFAFA] dark:bg-[#161619] border border-[#E9C349]/40 rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[520px]"
+              className="absolute right-0 mt-3 w-80 sm:w-96 bg-[#FAFAFA] dark:bg-[var(--bg-panel)] border border-[#E9C349]/40 rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[520px]"
             >
               {/* Header */}
-              <div className="bg-[#111111] p-4 text-white border-b border-[#E9C349]/30 flex items-center justify-between shrink-0">
+              <div className="bg-[var(--bg-base)] p-4 text-[var(--text-primary)] border-b border-[#E9C349]/30 flex items-center justify-between shrink-0">
                 <div className="flex items-center space-x-2">
                   <div className="p-1.5 rounded-lg bg-[#E9C349]/20 text-[#E9C349]">
                     <Bell className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold font-serif text-white flex items-center gap-2">
+                    <h3 className="text-sm font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
                       Notifications
                       {unreadCount > 0 && (
                         <span className="px-2 py-0.5 rounded-full bg-[#E9C349] text-black font-mono text-[10px] font-bold">
@@ -237,7 +237,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   </button>
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-1.5 rounded-lg bg-white/10 text-gray-400 hover:text-white transition-all"
+                    className="p-1.5 rounded-lg bg-white/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -245,7 +245,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               </div>
 
               {/* Filter Tabs Bar */}
-              <div className="bg-[#161619] px-3 py-2 border-b border-[var(--border-subtle)] flex items-center justify-between text-[11px] shrink-0 overflow-x-auto gap-1">
+              <div className="bg-[var(--bg-panel)] px-3 py-2 border-b border-[var(--border-subtle)] flex items-center justify-between text-[11px] shrink-0 overflow-x-auto gap-1">
                 <div className="flex items-center space-x-1">
                   {(['all', 'unread', 'application', 'inquiry', 'system'] as const).map(tab => (
                     <button
@@ -254,7 +254,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                       className={`px-2.5 py-1 rounded-lg font-semibold uppercase text-[10px] transition-all capitalize ${
                         activeTab === tab
                           ? 'bg-[#E9C349] text-black font-bold'
-                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
                       }`}
                     >
                       {tab}
@@ -311,7 +311,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                       </div>
 
                       {/* Quick item actions */}
-                      <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 bg-black/60 backdrop-blur-md p-1 rounded-lg text-white">
+                      <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 bg-black/60 backdrop-blur-md p-1 rounded-lg text-[var(--text-primary)]">
                         {!notif.isRead && (
                           <button
                             onClick={() => markAsRead(notif.id)}
@@ -335,10 +335,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               </div>
 
               {/* Footer Actions */}
-              <div className="bg-[#111111] p-3 px-4 border-t border-[#E9C349]/30 flex items-center justify-between text-xs text-gray-400 shrink-0">
+              <div className="bg-[var(--bg-base)] p-3 px-4 border-t border-[#E9C349]/30 flex items-center justify-between text-xs text-[var(--text-secondary)] shrink-0">
                 <button
                   onClick={clearAll}
-                  className="text-[10px] text-gray-400 hover:text-red-400 transition-colors"
+                  className="text-[10px] text-[var(--text-secondary)] hover:text-red-400 transition-colors"
                 >
                   Clear all history
                 </button>
@@ -368,7 +368,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             initial={{ opacity: 0, y: -20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            className="fixed top-20 right-6 z-50 max-w-sm w-full bg-[#111111] text-white border-2 border-[#E9C349] rounded-2xl p-4 shadow-2xl flex items-start space-x-3 font-sans"
+            className="fixed top-20 right-6 z-50 max-w-sm w-full bg-[var(--bg-base)] text-[var(--text-primary)] border-2 border-[#E9C349] rounded-2xl p-4 shadow-2xl flex items-start space-x-3 font-sans"
           >
             <div className="p-2 rounded-xl bg-[#E9C349]/20 text-[#E9C349] shrink-0 mt-0.5">
               <Sparkles className="w-5 h-5 animate-pulse" />
@@ -380,7 +380,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 </h4>
                 <button
                   onClick={() => setToastNotification(null)}
-                  className="p-1 text-gray-400 hover:text-white"
+                  className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>

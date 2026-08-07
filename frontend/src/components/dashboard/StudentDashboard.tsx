@@ -42,6 +42,7 @@ import {
 import { Language, ThemeMode, UserAccount } from '../../types';
 import { AttendanceHeatmap } from './AttendanceHeatmap';
 import { DashboardLangDropdown } from './DashboardLangDropdown';
+import { INITIAL_ASSESSMENTS, PracticalAssessment, scoreToCompetency, avgScore } from './InstructorDashboard';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line
 } from 'recharts';
@@ -287,21 +288,21 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#111111]/90 backdrop-blur-md flex flex-col font-sans text-white overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-[var(--bg-base)]/95 backdrop-blur-md flex flex-col font-sans text-[var(--text-primary)] overflow-hidden">
       {/* Top Header Bar */}
-      <header className="bg-[#161619] border-b border-[#E9C349]/30 px-6 py-3 flex items-center justify-between shrink-0">
+      <header className="bg-[var(--bg-panel)] border-b border-[#E9C349]/30 px-6 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#D4AF37] to-[#F5D468] text-black flex items-center justify-center font-bold font-serif text-xl shadow-lg">
             D
           </div>
           <div>
-            <h1 className="text-base font-serif font-bold text-white tracking-wide flex items-center gap-2">
+            <h1 className="text-base font-serif font-bold text-[var(--text-primary)] tracking-wide flex items-center gap-2">
               Dare Beauty Institute
               <span className="px-2 py-0.5 rounded-full bg-[#E9C349]/20 text-[#E9C349] font-mono text-[10px] font-bold uppercase border border-[#E9C349]/30">
                 {t.title}
               </span>
             </h1>
-            <p className="text-[11px] text-gray-400">
+            <p className="text-[11px] text-[var(--text-secondary)]">
               ደሬ የሴቶች እና የወንዶች የውበት ሙያ ማሰልጠኛ ተቋም
             </p>
           </div>
@@ -313,7 +314,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
           <button
             onClick={() => onChangeTheme(themeMode === 'light' ? 'dark' : 'light')}
-            className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-all border border-white/10"
+            className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-[var(--text-secondary)] transition-all border border-[var(--border-default)]"
             title="Toggle Light/Dark Theme"
           >
             {themeMode === 'light' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-[#E9C349]" />}
@@ -324,22 +325,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       {/* Main Layout Container */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Navigation Sidebar */}
-        <aside className="w-64 bg-[#111113] border-r border-white/10 flex flex-col justify-between shrink-0 overflow-y-auto p-3">
+        <aside className="w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-default)] flex flex-col justify-between shrink-0 overflow-y-auto p-3">
           <div className="space-y-1">
             {/* Student Mini Avatar Card */}
-            <div className="p-3 mb-3 rounded-2xl bg-[#161619] border border-[#E9C349]/30 flex items-center space-x-3">
+            <div className="p-3 mb-3 rounded-2xl bg-[var(--bg-panel)] border border-[#E9C349]/30 flex items-center space-x-3">
               <img
                 src={profilePhoto}
                 alt={STUDENT_DATA.fullName}
                 className="w-10 h-10 rounded-full object-cover border-2 border-[#E9C349]"
               />
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-white truncate">{STUDENT_DATA.fullName}</div>
+                <div className="text-xs font-bold text-[var(--text-primary)] truncate">{STUDENT_DATA.fullName}</div>
                 <div className="text-[10px] text-[#E9C349] font-mono font-bold truncate">{STUDENT_DATA.id}</div>
               </div>
             </div>
 
-            <div className="px-3 py-1 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-bold">
+            <div className="px-3 py-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest font-bold">
               Student Workspace
             </div>
 
@@ -348,7 +349,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'overview'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <GraduationCap className="w-4 h-4" />
@@ -360,7 +361,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'profile'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <User className="w-4 h-4" />
@@ -372,7 +373,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'program'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <BookOpen className="w-4 h-4" />
@@ -384,7 +385,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'attendance'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <CalendarCheck className="w-4 h-4" />
@@ -399,7 +400,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'grades'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <Award className="w-4 h-4" />
@@ -411,7 +412,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'transcript'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <FileText className="w-4 h-4" />
@@ -423,7 +424,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'certificate'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <Award className="w-4 h-4 text-amber-400" />
@@ -435,14 +436,14 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'payments'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <CreditCard className="w-4 h-4" />
               <span>Tuition & Receipts</span>
             </button>
 
-            <div className="pt-3 px-3 py-1 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-bold">
+            <div className="pt-3 px-3 py-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest font-bold">
               Communication
             </div>
 
@@ -451,7 +452,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'announcements'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <Bell className="w-4 h-4" />
@@ -466,7 +467,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'support'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <HelpCircle className="w-4 h-4" />
@@ -474,18 +475,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </button>
           </div>
 
-          <div className="pt-3 border-t border-white/10 mt-4 text-[10px] text-gray-500 font-mono text-center">
+          <div className="pt-3 border-t border-[var(--border-default)] mt-4 text-[10px] text-[var(--text-muted)] font-mono text-center">
             Dare Institute Student Portal v2.6
           </div>
         </aside>
 
         {/* Right Main Content Pane */}
-        <main className="flex-1 bg-[#1A1A1E] text-gray-100 overflow-y-auto p-6">
+        <main className="flex-1 bg-[var(--bg-card)] text-[var(--text-primary)] overflow-y-auto p-6">
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Welcome Card */}
-              <div className="p-6 rounded-3xl bg-gradient-to-r from-[#111111] via-[#1F1F24] to-[#111111] border border-[#E9C349]/40 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="p-6 rounded-3xl bg-gradient-to-r from-[var(--bg-base)] via-[var(--bg-panel)] to-[var(--bg-base)] border border-[#E9C349]/40 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center space-x-5">
                   <img
                     src={profilePhoto}
@@ -497,11 +498,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       <Sparkles className="w-3.5 h-3.5" />
                       <span>{t.welcome}, {STUDENT_DATA.fullName}</span>
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-serif font-bold text-white">
+                    <h2 className="text-xl sm:text-2xl font-serif font-bold text-[var(--text-primary)]">
                       {STUDENT_DATA.program}
                     </h2>
-                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-2">
-                      <span>{t.regNo} <strong className="text-white font-mono">{STUDENT_DATA.id}</strong></span>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1 flex items-center gap-2">
+                      <span>{t.regNo} <strong className="text-[var(--text-primary)] font-mono">{STUDENT_DATA.id}</strong></span>
                       <span>•</span>
                       <span>{STUDENT_DATA.duration}</span>
                       <span>•</span>
@@ -513,15 +514,15 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 </div>
 
                 {/* Course Completion Progress Bar */}
-                <div className="w-full md:w-64 bg-black/50 p-4 rounded-2xl border border-white/10 shrink-0">
+                <div className="w-full md:w-64 bg-black/50 p-4 rounded-2xl border border-[var(--border-default)] shrink-0">
                   <div className="flex justify-between text-xs mb-1 font-mono">
-                    <span className="text-gray-400">Syllabus Completion</span>
+                    <span className="text-[var(--text-secondary)]">Syllabus Completion</span>
                     <span className="text-[#E9C349] font-bold">83%</span>
                   </div>
                   <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
                     <div className="bg-gradient-to-r from-[#D4AF37] to-[#E9C349] h-full w-[83%]" />
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-2 text-right">
+                  <p className="text-[10px] text-[var(--text-secondary)] mt-2 text-right">
                     10 of 12 Practical Modules Finished
                   </p>
                 </div>
@@ -529,29 +530,29 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
               {/* Core Metric Badges */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 rounded-2xl bg-[#161619] border border-white/10">
-                  <span className="text-[10px] font-mono text-gray-400 uppercase font-bold">Overall Attendance</span>
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)]">
+                  <span className="text-[10px] font-mono text-[var(--text-secondary)] uppercase font-bold">Overall Attendance</span>
                   <div className="text-2xl font-mono font-bold text-emerald-400 mt-1">{STUDENT_DATA.overallAttendance}%</div>
                   <span className="text-[10px] text-emerald-400 font-bold">✔ Exceeds 75% COC Minimum</span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#161619] border border-white/10">
-                  <span className="text-[10px] font-mono text-gray-400 uppercase font-bold">Competency Badge</span>
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)]">
+                  <span className="text-[10px] font-mono text-[var(--text-secondary)] uppercase font-bold">Competency Badge</span>
                   <div className="text-lg font-bold text-[#E9C349] mt-1 flex items-center space-x-1">
                     <span>🥇 Highly Competent</span>
                   </div>
-                  <span className="text-[10px] text-gray-400">Average Grade: 96%</span>
+                  <span className="text-[10px] text-[var(--text-secondary)]">Average Grade: 96%</span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#161619] border border-white/10">
-                  <span className="text-[10px] font-mono text-gray-400 uppercase font-bold">Tuition Fee Status</span>
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)]">
+                  <span className="text-[10px] font-mono text-[var(--text-secondary)] uppercase font-bold">Tuition Fee Status</span>
                   <div className="text-xl font-mono font-bold text-emerald-400 mt-1">FULLY PAID</div>
-                  <span className="text-[10px] text-gray-400">12,000 ETB Settled</span>
+                  <span className="text-[10px] text-[var(--text-secondary)]">12,000 ETB Settled</span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#161619] border border-white/10">
-                  <span className="text-[10px] font-mono text-gray-400 uppercase font-bold">Lead Instructor</span>
-                  <div className="text-sm font-bold text-white mt-1 truncate">{STUDENT_DATA.instructor}</div>
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)]">
+                  <span className="text-[10px] font-mono text-[var(--text-secondary)] uppercase font-bold">Lead Instructor</span>
+                  <div className="text-sm font-bold text-[var(--text-primary)] mt-1 truncate">{STUDENT_DATA.instructor}</div>
                   <span className="text-[10px] text-[#E9C349]">{STUDENT_DATA.instructorPhone}</span>
                 </div>
               </div>
@@ -559,20 +560,20 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               {/* Schedule & Announcements Dual Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Upcoming Weekly Schedule */}
-                <div className="lg:col-span-2 p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-4">
-                  <h3 className="text-sm font-bold text-white flex items-center justify-between">
+                <div className="lg:col-span-2 p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center justify-between">
                     <span>Weekly Class & Lab Schedule</span>
                     <button onClick={() => setActiveTab('program')} className="text-xs text-[#E9C349] hover:underline">View Full Details</button>
                   </h3>
 
                   <div className="space-y-2.5">
                     {WEEKLY_SCHEDULE.map((item, i) => (
-                      <div key={i} className="p-3.5 rounded-2xl bg-black/40 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div key={i} className="p-3.5 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
                           <div className="text-xs font-bold text-[#E9C349]">{item.day} • {item.time}</div>
-                          <div className="text-xs font-semibold text-white mt-0.5">{item.module}</div>
+                          <div className="text-xs font-semibold text-[var(--text-primary)] mt-0.5">{item.module}</div>
                         </div>
-                        <span className="px-2.5 py-1 rounded-xl bg-white/5 text-gray-300 font-mono text-[10px] shrink-0">
+                        <span className="px-2.5 py-1 rounded-xl bg-white/5 text-[var(--text-secondary)] font-mono text-[10px] shrink-0">
                           {item.room}
                         </span>
                       </div>
@@ -581,23 +582,23 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 </div>
 
                 {/* Quick Announcements Widget */}
-                <div className="p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-4">
-                  <h3 className="text-sm font-bold text-white flex items-center justify-between">
+                <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center justify-between">
                     <span>Institute Notices</span>
                     <Bell className="w-4 h-4 text-[#E9C349]" />
                   </h3>
 
                   <div className="space-y-3">
                     {ANNOUNCEMENTS.map(a => (
-                      <div key={a.id} className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                      <div key={a.id} className="p-3.5 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="px-2 py-0.5 rounded-full bg-[#E9C349]/20 text-[#E9C349] text-[9px] font-mono font-bold">
                             {a.category}
                           </span>
-                          <span className="text-[10px] font-mono text-gray-500">{a.date}</span>
+                          <span className="text-[10px] font-mono text-[var(--text-muted)]">{a.date}</span>
                         </div>
-                        <h4 className="text-xs font-bold text-white">{a.title}</h4>
-                        <p className="text-[11px] text-gray-400 leading-snug line-clamp-2">{a.body}</p>
+                        <h4 className="text-xs font-bold text-[var(--text-primary)]">{a.title}</h4>
+                        <p className="text-[11px] text-[var(--text-secondary)] leading-snug line-clamp-2">{a.body}</p>
                       </div>
                     ))}
                   </div>
@@ -609,8 +610,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           {/* TAB 2: PROFILE */}
           {activeTab === 'profile' && (
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-6">
-                <h2 className="text-xl font-bold font-serif text-white">Student Profile Settings</h2>
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
+                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Student Profile Settings</h2>
 
                 {/* Avatar change */}
                 <div className="flex items-center space-x-5">
@@ -630,39 +631,39 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                         }}
                       />
                     </label>
-                    <p className="text-[10px] text-gray-400">Allowed formats: JPG, PNG. Max 2MB.</p>
+                    <p className="text-[10px] text-[var(--text-secondary)]">Allowed formats: JPG, PNG. Max 2MB.</p>
                   </div>
                 </div>
 
                 {/* Form fields */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
-                    <label className="text-gray-400 font-mono text-[10px] uppercase">Full Name (English)</label>
-                    <input type="text" readOnly value={STUDENT_DATA.fullName} className="w-full mt-1 p-3 rounded-xl bg-black/50 border border-white/10 text-white" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Full Name (English)</label>
+                    <input type="text" readOnly value={STUDENT_DATA.fullName} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]" />
                   </div>
                   <div>
-                    <label className="text-gray-400 font-mono text-[10px] uppercase">Full Name (Amharic)</label>
-                    <input type="text" readOnly value={STUDENT_DATA.amharicName} className="w-full mt-1 p-3 rounded-xl bg-black/50 border border-white/10 text-white font-serif" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Full Name (Amharic)</label>
+                    <input type="text" readOnly value={STUDENT_DATA.amharicName} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] font-serif" />
                   </div>
                   <div>
-                    <label className="text-gray-400 font-mono text-[10px] uppercase">Phone Number</label>
-                    <input type="text" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="w-full mt-1 p-3 rounded-xl bg-black/50 border border-white/10 text-white outline-none focus:border-[#E9C349]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Phone Number</label>
+                    <input type="text" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349]" />
                   </div>
                   <div>
-                    <label className="text-gray-400 font-mono text-[10px] uppercase">Email Address</label>
-                    <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="w-full mt-1 p-3 rounded-xl bg-black/50 border border-white/10 text-white outline-none focus:border-[#E9C349]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Email Address</label>
+                    <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349]" />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-gray-400 font-mono text-[10px] uppercase">Residential Address</label>
-                    <input type="text" readOnly value={STUDENT_DATA.address} className="w-full mt-1 p-3 rounded-xl bg-black/50 border border-white/10 text-white" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Residential Address</label>
+                    <input type="text" readOnly value={STUDENT_DATA.address} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]" />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-gray-400 font-mono text-[10px] uppercase">Emergency Contact Person</label>
-                    <input type="text" readOnly value={STUDENT_DATA.emergencyContact} className="w-full mt-1 p-3 rounded-xl bg-black/50 border border-white/10 text-white" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Emergency Contact Person</label>
+                    <input type="text" readOnly value={STUDENT_DATA.emergencyContact} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]" />
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/10 flex justify-end">
+                <div className="pt-4 border-t border-[var(--border-default)] flex justify-end">
                   <button onClick={() => alert('Profile contact info saved!')} className="px-5 py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:brightness-110">
                     Save Profile Updates
                   </button>
@@ -674,31 +675,31 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           {/* TAB 3: PROGRAM */}
           {activeTab === 'program' && (
             <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-default)] pb-4">
                   <div>
-                    <h2 className="text-xl font-bold font-serif text-white">{STUDENT_DATA.program}</h2>
-                    <p className="text-xs text-gray-400">{STUDENT_DATA.duration} • Enrolled on {STUDENT_DATA.regDate}</p>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">{STUDENT_DATA.program}</h2>
+                    <p className="text-xs text-[var(--text-secondary)]">{STUDENT_DATA.duration} • Enrolled on {STUDENT_DATA.regDate}</p>
                   </div>
                   <span className="px-3 py-1 rounded-full bg-[#E9C349]/20 text-[#E9C349] font-mono text-xs font-bold">
                     Shift: {STUDENT_DATA.shift}
                   </span>
                 </div>
 
-                <h3 className="text-sm font-bold text-white pt-2">Syllabus Training Units / Practical Modules</h3>
-                <div className="divide-y divide-white/5">
+                <h3 className="text-sm font-bold text-[var(--text-primary)] pt-2">Syllabus Training Units / Practical Modules</h3>
+                <div className="divide-y divide-[var(--border-subtle)]">
                   {MODULES_LIST.map((m) => (
                     <div key={m.id} className="py-3 flex items-center justify-between text-xs">
                       <div className="flex items-center space-x-3">
-                        <CheckCircle2 className={`w-4 h-4 ${m.status === 'Completed' ? 'text-emerald-400' : 'text-gray-500'}`} />
+                        <CheckCircle2 className={`w-4 h-4 ${m.status === 'Completed' ? 'text-emerald-400' : 'text-[var(--text-muted)]'}`} />
                         <div>
-                          <div className="font-bold text-white">{m.name}</div>
-                          <div className="text-[10px] text-gray-400 font-mono">{m.id} • {m.hours}</div>
+                          <div className="font-bold text-[var(--text-primary)]">{m.name}</div>
+                          <div className="text-[10px] text-[var(--text-secondary)] font-mono">{m.id} • {m.hours}</div>
                         </div>
                       </div>
                       <div className="text-right">
                         <span className="font-mono font-bold text-[#E9C349]">{m.score}</span>
-                        <div className="text-[10px] text-gray-400">{m.grade}</div>
+                        <div className="text-[10px] text-[var(--text-secondary)]">{m.grade}</div>
                       </div>
                     </div>
                   ))}
@@ -716,17 +717,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 themeMode={themeMode}
                 selectedStudentId={currentUser?.fullName?.includes('Helen') ? 'ST-2026-012' : currentUser?.fullName?.includes('Eyerus') ? 'ST-2026-034' : currentUser?.fullName?.includes('Dawit') ? 'ST-2026-089' : 'ST-2026-005'}
                 isEmbedded={true}
+                role="student"
               />
 
-              <div className="p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-6">
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold font-serif text-white">Monthly Comparison & COC Eligibility</h2>
-                    <p className="text-xs text-gray-400">Ethiopian TVET minimum threshold requires 75% practical lab attendance.</p>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Monthly Comparison & COC Eligibility</h2>
+                    <p className="text-xs text-[var(--text-secondary)]">Ethiopian TVET minimum threshold requires 75% practical lab attendance.</p>
                   </div>
                   <div className="text-right font-mono">
                     <span className="text-2xl font-bold text-emerald-400">{STUDENT_DATA.overallAttendance}%</span>
-                    <div className="text-[10px] text-gray-400">Cumulative Rate</div>
+                    <div className="text-[10px] text-[var(--text-secondary)]">Cumulative Rate</div>
                   </div>
                 </div>
 
@@ -748,65 +750,181 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           )}
 
           {/* TAB 5: GRADES */}
-          {activeTab === 'grades' && (
-            <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-6">
-                <h2 className="text-xl font-bold font-serif text-white">Competency & Practical Assessment Results</h2>
+          {activeTab === 'grades' && (() => {
+            // Find this student's assessments from the instructor's records
+            const myAssessments = INITIAL_ASSESSMENTS
+              .filter(a => a.studentId === STUDENT_DATA.id)
+              .sort((a, b) => b.date.localeCompare(a.date));
+            const avg = myAssessments.length ? avgScore(myAssessments) : 0;
+            const comp = scoreToCompetency(avg);
 
+            return (
+              <div className="space-y-6">
+
+                {/* ── Overall summary cards ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-2xl bg-black/40 border border-[#E9C349]/40 text-center">
-                    <div className="text-2xl mb-1">🥇</div>
-                    <div className="text-xs font-bold text-[#E9C349]">Highly Competent</div>
-                    <p className="text-[10px] text-gray-400 mt-1">Score Range: 90% - 100%</p>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-black/40 border border-white/10 text-center opacity-60">
-                    <div className="text-2xl mb-1">🥈</div>
-                    <div className="text-xs font-bold text-gray-300">Competent</div>
-                    <p className="text-[10px] text-gray-400 mt-1">Score Range: 75% - 89%</p>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-black/40 border border-white/10 text-center opacity-60">
-                    <div className="text-2xl mb-1">🥉</div>
-                    <div className="text-xs font-bold text-gray-300">Developing Competence</div>
-                    <p className="text-[10px] text-gray-400 mt-1">Below 75% (Needs Retake)</p>
-                  </div>
+                  {([
+                    { emoji: '🥇', label: 'Highly Competent', range: '90% – 100%', active: comp === 'Highly Competent' },
+                    { emoji: '🥈', label: 'Competent',        range: '75% – 89%',  active: comp === 'Competent' },
+                    { emoji: '🥉', label: 'Developing',       range: 'Below 75%',  active: comp === 'Developing Competence' },
+                  ] as const).map(c => (
+                    <div key={c.label} className={`p-4 rounded-2xl border text-center transition-all ${
+                      c.active
+                        ? 'border-[#E9C349]/50 bg-[#E9C349]/10'
+                        : 'border-[var(--border-subtle)] bg-[var(--bg-glass)] opacity-50'
+                    }`}>
+                      <div className="text-2xl mb-1">{c.emoji}</div>
+                      <div className={`text-xs font-bold ${c.active ? 'text-[#E9C349]' : 'text-[var(--text-secondary)]'}`}>{c.label}</div>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1">{c.range}</p>
+                    </div>
+                  ))}
                 </div>
 
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-white/10 text-[#E9C349] font-mono text-[10px] uppercase">
-                      <th className="py-2">Module Code</th>
-                      <th className="py-2">Module Name</th>
-                      <th className="py-2">Practical Score</th>
-                      <th className="py-2">Competency Result</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {MODULES_LIST.map(m => (
-                      <tr key={m.id}>
-                        <td className="py-3 font-mono text-[#E9C349] font-bold">{m.id}</td>
-                        <td className="py-3 font-semibold text-white">{m.name}</td>
-                        <td className="py-3 font-mono font-bold text-white">{m.score}</td>
-                        <td className="py-3">
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
-                            {m.grade}
-                          </span>
-                        </td>
+                {/* ── Instructor-graded practical assessments ── */}
+                <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-5">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div>
+                      <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Practical Assessment Results</h2>
+                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                        Scores recorded by your instructor — read only.
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={`text-2xl font-mono font-bold ${avg >= 90 ? 'text-emerald-400' : avg >= 75 ? 'text-[#E9C349]' : 'text-red-400'}`}>
+                        {myAssessments.length ? avg : '—'}%
+                      </div>
+                      <div className="text-[10px] text-[var(--text-muted)] font-mono">avg · {myAssessments.length} assessments</div>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  {myAssessments.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="w-full h-2 rounded-full bg-[var(--bg-glass)] overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${avg >= 90 ? 'bg-emerald-400' : avg >= 75 ? 'bg-[#E9C349]' : 'bg-red-400'}`}
+                          style={{ width: `${avg}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
+                        <span>0%</span>
+                        <span className="text-amber-400">75% COC minimum</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {myAssessments.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <div className="text-3xl mb-2">📋</div>
+                      <p className="text-sm text-[var(--text-muted)]">No assessments recorded yet.</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-1">Your instructor will add scores after each practical session.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-[var(--border-default)] text-[var(--text-muted)] font-mono text-[10px] uppercase">
+                            <th className="py-2.5 px-3">Unit / Module</th>
+                            <th className="py-2.5 px-3">Date</th>
+                            <th className="py-2.5 px-3 text-center">Score</th>
+                            <th className="py-2.5 px-3 text-center">Result</th>
+                            <th className="py-2.5 px-3 hidden md:table-cell">Instructor Notes</th>
+                            <th className="py-2.5 px-3 hidden sm:table-cell">Graded By</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--border-subtle)]">
+                          {myAssessments.map(a => {
+                            const pct = Math.round((a.score / a.maxScore) * 100);
+                            const badgeClass =
+                              pct >= 90 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                              pct >= 75 ? 'bg-[#E9C349]/10 text-[#E9C349] border-[#E9C349]/30' :
+                                          'bg-red-500/10 text-red-400 border-red-500/30';
+                            const barColor = pct >= 90 ? 'bg-emerald-400' : pct >= 75 ? 'bg-[#E9C349]' : 'bg-red-400';
+                            const textColor = pct >= 90 ? 'text-emerald-400' : pct >= 75 ? 'text-[#E9C349]' : 'text-red-400';
+                            return (
+                              <tr key={a.id} className="hover:bg-[var(--bg-glass)] transition-colors">
+                                <td className="py-3 px-3 font-semibold text-[var(--text-primary)] max-w-[200px]">
+                                  <div className="truncate">{a.unit}</div>
+                                </td>
+                                <td className="py-3 px-3 font-mono text-[var(--text-secondary)] whitespace-nowrap">{a.date}</td>
+                                <td className="py-3 px-3 text-center">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className={`font-mono font-bold text-sm ${textColor}`}>
+                                      {a.score}<span className="text-[10px] text-[var(--text-muted)]">/{a.maxScore}</span>
+                                    </span>
+                                    <div className="w-14 h-1.5 rounded-full bg-[var(--bg-glass)] overflow-hidden">
+                                      <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3 text-center">
+                                  <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${badgeClass}`}>
+                                    {scoreToCompetency(pct)}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3 text-[var(--text-muted)] hidden md:table-cell max-w-[220px]">
+                                  <span className="italic text-[11px] line-clamp-2">{a.notes || '—'}</span>
+                                </td>
+                                <td className="py-3 px-3 text-[var(--text-secondary)] hidden sm:table-cell text-[11px] whitespace-nowrap">
+                                  {a.gradedBy}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Programme module grades (existing static data) ── */}
+                <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
+                  <h3 className="text-base font-bold font-serif text-[var(--text-primary)]">Programme Module Scores</h3>
+                  <p className="text-xs text-[var(--text-secondary)]">Academic scores across all syllabus training units.</p>
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-[var(--border-default)] text-[#E9C349] font-mono text-[10px] uppercase">
+                        <th className="py-2">Module Code</th>
+                        <th className="py-2">Module Name</th>
+                        <th className="py-2">Practical Score</th>
+                        <th className="py-2">Result</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border-subtle)]">
+                      {MODULES_LIST.map(m => (
+                        <tr key={m.id}>
+                          <td className="py-3 font-mono text-[#E9C349] font-bold">{m.id}</td>
+                          <td className="py-3 font-semibold text-[var(--text-primary)]">{m.name}</td>
+                          <td className="py-3 font-mono font-bold text-[var(--text-primary)]">{m.score}</td>
+                          <td className="py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              m.grade === 'Highly Competent' ? 'bg-emerald-500/20 text-emerald-400' :
+                              m.grade === 'Competent'        ? 'bg-[#E9C349]/20 text-[#E9C349]' :
+                              m.grade === 'Scheduled'        ? 'bg-[var(--bg-glass)] text-[var(--text-muted)]' :
+                                                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              {m.grade}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* TAB 6: TRANSCRIPT */}
           {activeTab === 'transcript' && (
             <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-6">
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold font-serif text-white">Official Academic Transcript</h2>
-                    <p className="text-xs text-gray-400">Generated transcript for TVET government accreditation and COC verification.</p>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Official Academic Transcript</h2>
+                    <p className="text-xs text-[var(--text-secondary)]">Generated transcript for TVET government accreditation and COC verification.</p>
                   </div>
 
                   <button
@@ -876,11 +994,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           {/* TAB 7: CERTIFICATE */}
           {activeTab === 'certificate' && (
             <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-6">
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold font-serif text-white">Digital Vocational Qualification Certificate</h2>
-                    <p className="text-xs text-gray-400">Official diploma issued upon completion of 6-month advanced training track.</p>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Digital Vocational Qualification Certificate</h2>
+                    <p className="text-xs text-[var(--text-secondary)]">Official diploma issued upon completion of 6-month advanced training track.</p>
                   </div>
 
                   <button
@@ -893,35 +1011,35 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 </div>
 
                 {/* Digital Certificate Preview Card */}
-                <div className="p-10 rounded-3xl bg-gradient-to-b from-[#111111] to-[#1A1A1E] border-8 border-double border-[#D4AF37] text-center space-y-6 relative overflow-hidden shadow-2xl">
+                <div className="p-10 rounded-3xl bg-gradient-to-b from-[var(--bg-base)] to-[var(--bg-card)] border-8 border-double border-[#D4AF37] text-center space-y-6 relative overflow-hidden shadow-2xl">
                   <div className="text-[#E9C349] font-mono text-xs uppercase tracking-widest font-bold">
                     Vocational Diploma Certification
                   </div>
 
-                  <h3 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-wide">
+                  <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[var(--text-primary)] tracking-wide">
                     Dare Women's & Men's Beauty Institute
                   </h3>
 
-                  <p className="text-xs text-gray-400 uppercase tracking-widest">This is to certify that</p>
+                  <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest">This is to certify that</p>
 
                   <div className="text-2xl sm:text-4xl font-serif font-bold text-[#E9C349] border-b-2 border-[#E9C349] inline-block px-8 py-2">
                     {STUDENT_DATA.fullName}
                   </div>
 
-                  <p className="text-xs text-gray-300 max-w-xl mx-auto leading-relaxed">
+                  <p className="text-xs text-[var(--text-secondary)] max-w-xl mx-auto leading-relaxed">
                     has successfully fulfilled all course requirements, practical studio lab evaluations, and COC competency standards in
-                    <br/><strong className="text-white text-sm">{STUDENT_DATA.program}</strong>
+                    <br/><strong className="text-[var(--text-primary)] text-sm">{STUDENT_DATA.program}</strong>
                   </p>
 
                   {/* Verification QR section */}
-                  <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
+                  <div className="pt-6 border-t border-[var(--border-default)] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--text-secondary)]">
                     <div className="flex items-center space-x-3 text-left">
                       <div className="p-2 rounded-xl bg-white text-black">
                         <QrCode className="w-8 h-8" />
                       </div>
                       <div>
                         <div className="font-mono text-[#E9C349] font-bold text-[10px]">VERIFICATION CODE</div>
-                        <div className="font-mono text-white text-xs">DARE-2026-CERT-005</div>
+                        <div className="font-mono text-[var(--text-primary)] text-xs">DARE-2026-CERT-005</div>
                       </div>
                     </div>
 
@@ -937,27 +1055,27 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           {/* TAB 8: PAYMENTS */}
           {activeTab === 'payments' && (
             <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-6">
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold font-serif text-white">Tuition & Payment Receipts</h2>
-                    <p className="text-xs text-gray-400">Track tuition installments and upload transfer payment receipts.</p>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Tuition & Payment Receipts</h2>
+                    <p className="text-xs text-[var(--text-secondary)]">Track tuition installments and upload transfer payment receipts.</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-mono text-gray-400 uppercase">Outstanding Balance:</span>
+                    <span className="text-xs font-mono text-[var(--text-secondary)] uppercase">Outstanding Balance:</span>
                     <div className="text-xl font-mono font-bold text-emerald-400">{STUDENT_DATA.balance}</div>
                   </div>
                 </div>
 
                 {/* Upload Receipt Modal Box */}
-                <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-3">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                <div className="p-5 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] space-y-3">
+                  <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center space-x-2">
                     <CreditCard className="w-4 h-4 text-[#E9C349]" />
                     <span>Submit Payment Receipt Screenshot</span>
                   </h3>
 
                   <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <label className="cursor-pointer flex-1 w-full p-3 rounded-xl bg-white/5 border border-dashed border-[#E9C349]/50 text-center text-xs text-gray-300 hover:bg-white/10">
+                    <label className="cursor-pointer flex-1 w-full p-3 rounded-xl bg-white/5 border border-dashed border-[#E9C349]/50 text-center text-xs text-[var(--text-secondary)] hover:bg-white/10">
                       <Upload className="w-4 h-4 mx-auto mb-1 text-[#E9C349]" />
                       <span>{uploadedReceipt ? uploadedReceipt.name : 'Click to upload screenshot (Telebirr, CBE Birr, Bank Transfer)'}</span>
                       <input
@@ -995,7 +1113,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-white/10 text-[#E9C349] font-mono text-[10px] uppercase">
+                    <tr className="border-b border-[var(--border-default)] text-[#E9C349] font-mono text-[10px] uppercase">
                       <th className="py-2">Receipt No</th>
                       <th className="py-2">Date</th>
                       <th className="py-2">Amount Paid</th>
@@ -1003,13 +1121,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       <th className="py-2">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-[var(--border-subtle)]">
                     {PAYMENT_HISTORY.map(p => (
                       <tr key={p.id}>
                         <td className="py-3 font-mono font-bold text-[#E9C349]">{p.id}</td>
-                        <td className="py-3 text-gray-300 font-mono">{p.date}</td>
-                        <td className="py-3 font-mono font-bold text-white">{p.amount}</td>
-                        <td className="py-3 text-gray-300">{p.method}</td>
+                        <td className="py-3 text-[var(--text-secondary)] font-mono">{p.date}</td>
+                        <td className="py-3 font-mono font-bold text-[var(--text-primary)]">{p.amount}</td>
+                        <td className="py-3 text-[var(--text-secondary)]">{p.method}</td>
                         <td className="py-3">
                           <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
                             {p.status}
@@ -1026,20 +1144,20 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           {/* TAB 9: ANNOUNCEMENTS */}
           {activeTab === 'announcements' && (
             <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-4">
-                <h2 className="text-xl font-bold font-serif text-white">Institute Announcements & Notices</h2>
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
+                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Institute Announcements & Notices</h2>
 
                 <div className="space-y-4">
                   {ANNOUNCEMENTS.map(a => (
-                    <div key={a.id} className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-2">
+                    <div key={a.id} className="p-5 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="px-2.5 py-1 rounded-full bg-[#E9C349]/20 text-[#E9C349] font-mono text-xs font-bold">
                           {a.category}
                         </span>
-                        <span className="text-xs font-mono text-gray-400">{a.date}</span>
+                        <span className="text-xs font-mono text-[var(--text-secondary)]">{a.date}</span>
                       </div>
-                      <h3 className="text-base font-bold text-white">{a.title}</h3>
-                      <p className="text-xs text-gray-300 leading-relaxed">{a.body}</p>
+                      <h3 className="text-base font-bold text-[var(--text-primary)]">{a.title}</h3>
+                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{a.body}</p>
                     </div>
                   ))}
                 </div>
@@ -1050,17 +1168,17 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           {/* TAB 10: HELP & SUPPORT */}
           {activeTab === 'support' && (
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="p-6 rounded-3xl bg-[#161619] border border-white/10 space-y-6">
-                <h2 className="text-xl font-bold font-serif text-white">Student Support & Inquiry Desk</h2>
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
+                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Student Support & Inquiry Desk</h2>
 
                 <div className="space-y-3 text-xs">
-                  <label className="text-gray-400 font-mono uppercase text-[10px]">Submit an Inquiry to Registrar</label>
+                  <label className="text-[var(--text-secondary)] font-mono uppercase text-[10px]">Submit an Inquiry to Registrar</label>
                   <textarea
                     rows={4}
                     placeholder="Type your question regarding schedules, transcripts, or COC exams..."
                     value={inquiryText}
                     onChange={(e) => setInquiryText(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-black/50 border border-white/10 text-white outline-none focus:border-[#E9C349]"
+                    className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349]"
                   />
                   <button
                     onClick={() => {
@@ -1082,16 +1200,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   )}
                 </div>
 
-                <div className="pt-6 border-t border-white/10 space-y-3">
-                  <h3 className="text-sm font-bold text-white">Frequently Asked Questions</h3>
+                <div className="pt-6 border-t border-[var(--border-default)] space-y-3">
+                  <h3 className="text-sm font-bold text-[var(--text-primary)]">Frequently Asked Questions</h3>
                   <div className="space-y-2 text-xs">
                     <div className="p-3 rounded-xl bg-black/40">
                       <div className="font-bold text-[#E9C349]">How do I register for the government COC exam?</div>
-                      <p className="text-gray-400 mt-1">Registrations open 3 weeks prior to course end date. Bring your national ID and 2 photos to the administration desk.</p>
+                      <p className="text-[var(--text-secondary)] mt-1">Registrations open 3 weeks prior to course end date. Bring your national ID and 2 photos to the administration desk.</p>
                     </div>
                     <div className="p-3 rounded-xl bg-black/40">
                       <div className="font-bold text-[#E9C349]">What happens if my attendance drops below 75%?</div>
-                      <p className="text-gray-400 mt-1">Students falling below 75% lab attendance must complete makeup practical lab sessions before certificate issuance.</p>
+                      <p className="text-[var(--text-secondary)] mt-1">Students falling below 75% lab attendance must complete makeup practical lab sessions before certificate issuance.</p>
                     </div>
                   </div>
                 </div>

@@ -20,24 +20,22 @@ import { Footer } from './Footer';
 import { ApplicationModal } from '../modals/ApplicationModal';
 import { ProgramDetailModal } from '../modals/ProgramDetailModal';
 import { ContactModal } from '../modals/ContactModal';
-import { Language, TrainingProgram, ThemeMode, UserAccount } from '@/types';
+import { Language, TrainingProgram, UserAccount } from '@/types';
+import { useTheme } from '../shared/ThemeProvider';
 
 export function HomeClient() {
   const searchParams = useSearchParams();
+  const { themeMode, setThemeMode } = useTheme();
   const [currentLang, setCurrentLang] = useState<Language>('en');
-  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [selectedProgramId, setSelectedProgramId] = useState<string | undefined>(undefined);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [activeSyllabusProgram, setActiveSyllabusProgram] = useState<TrainingProgram | null>(null);
   const [user, setUser] = useState<UserAccount | null>(null);
 
-  // Hydrate theme, lang & user from localStorage after mount
+  // Hydrate lang & user from localStorage after mount
   useEffect(() => {
     try {
-      const savedTheme = localStorage.getItem('hc-theme') as ThemeMode | null;
-      if (savedTheme) setThemeMode(savedTheme);
-
       const savedUser = localStorage.getItem('dare_user_account');
       if (savedUser) setUser(JSON.parse(savedUser));
 
@@ -45,14 +43,6 @@ export function HomeClient() {
       if (savedLang) setCurrentLang(savedLang);
     } catch { /* ignore */ }
   }, []);
-
-  // Apply theme to document
-  useEffect(() => {
-    try { localStorage.setItem('hc-theme', themeMode); } catch { /* ignore */ }
-    const root = document.documentElement;
-    root.setAttribute('data-theme', themeMode);
-    root.classList.toggle('dark', themeMode !== 'light');
-  }, [themeMode]);
 
   const handleChangeLang = (lang: Language) => {
     setCurrentLang(lang);
