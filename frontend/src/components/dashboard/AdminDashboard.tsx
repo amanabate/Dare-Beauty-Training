@@ -61,6 +61,7 @@ import { exportToCSV, generatePDFReport } from '../../utils/exportUtils';
 import { AttendanceHeatmap } from './AttendanceHeatmap';
 import { NotificationCenter } from './NotificationCenter';
 import { DashboardLangDropdown } from './DashboardLangDropdown';
+import { AnalyticsSection } from '../landing/AnalyticsSection';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -89,6 +90,7 @@ type AdminTab =
   | 'certificates'
   | 'fees'
   | 'reports'
+  | 'analytics'
   | 'cms'
   | 'users'
   | 'settings'
@@ -540,6 +542,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="pt-3 px-3 py-2 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest font-bold">
               System & CMS
             </div>
+
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
+                activeTab === 'analytics'
+                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              <span>Institute Analytics</span>
+            </button>
 
             <button
               onClick={() => setActiveTab('reports')}
@@ -1227,6 +1241,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* ANALYTICS TAB */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1 pb-2">
+                <div>
+                  <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Institute Analytics & Data Insights</h2>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">Real-time enrollment, attendance trends, and course popularity metrics.</p>
+                </div>
+              </div>
+              {/* Reuse the full AnalyticsSection component — it handles its own charts and state */}
+              <div className="-mx-6">
+                <AnalyticsSection currentLang={currentLang} />
               </div>
             </div>
           )}
