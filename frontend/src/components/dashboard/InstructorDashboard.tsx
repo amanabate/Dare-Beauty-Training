@@ -41,7 +41,8 @@ import {
   Send,
   BarChart3,
   Calendar,
-  Users
+  Users,
+  LogOut,
 } from 'lucide-react';
 import { Language, ThemeMode, UserAccount } from '../../types';
 import { exportToCSV } from '../../utils/exportUtils';
@@ -57,6 +58,7 @@ interface InstructorDashboardProps {
   themeMode: ThemeMode;
   onChangeTheme: (mode: ThemeMode) => void;
   currentUser?: UserAccount | null;
+  onLogout?: () => void;
 }
 
 type InstructorTab =
@@ -181,7 +183,8 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
   onChangeLang,
   themeMode,
   onChangeTheme,
-  currentUser
+  currentUser,
+  onLogout,
 }) => {
   const [activeTab, setActiveTab] = useState<InstructorTab>('overview');
   const [studentsList, setStudentsList] = useState(INITIAL_ASSIGNED_STUDENTS);
@@ -354,9 +357,11 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
       {/* Top Bar Header */}
       <header className="bg-[var(--bg-panel)] border-b border-[#E9C349]/30 px-6 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#D4AF37] to-[#F5D468] text-black flex items-center justify-center font-bold font-serif text-xl shadow-lg">
-            D
-          </div>
+          <img
+              src="/images/dareLogo.jpeg"
+              alt="Dare Institute Logo"
+              className="w-10 h-10 rounded-full object-cover border border-[#E9C349]/40 shadow-lg shrink-0"
+            />
           <div>
             <h1 className="text-base font-serif font-bold text-[var(--text-primary)] tracking-wide flex items-center gap-2">
               Dare Beauty Institute
@@ -380,6 +385,14 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             title="Toggle Light/Dark Theme"
           >
             {themeMode === 'light' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-[#E9C349]" />}
+          </button>
+
+          <button
+            onClick={onLogout}
+            title="Sign Out"
+            className="p-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all border border-red-500/20"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
@@ -532,8 +545,25 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             </button>
           </div>
 
-          <div className="pt-3 border-t border-[var(--border-default)] mt-4 text-[10px] text-[var(--text-muted)] font-mono text-center">
-            Dare Faculty System v2.6
+          <div className="pt-3 border-t border-[var(--border-default)] mt-4 space-y-2">
+            <div className="p-3 rounded-2xl bg-white/5 border border-[var(--border-default)] flex items-center space-x-3">
+              <img
+                src="/images/dareLogo.jpeg"
+                alt="Dare"
+                className="w-8 h-8 rounded-full object-cover border border-[#E9C349]/40 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-bold text-[var(--text-primary)] truncate">{INSTRUCTOR_DATA.name}</div>
+                <div className="text-[10px] text-[var(--text-secondary)] font-mono">Instructor</div>
+              </div>
+            </div>
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span>Sign Out</span>
+            </button>
           </div>
         </aside>
 

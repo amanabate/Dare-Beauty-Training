@@ -61,6 +61,7 @@ import { exportToCSV, generatePDFReport } from '../../utils/exportUtils';
 import { AttendanceHeatmap } from './AttendanceHeatmap';
 import { NotificationCenter } from './NotificationCenter';
 import { DashboardLangDropdown } from './DashboardLangDropdown';
+import { AnalyticsSection } from '../landing/AnalyticsSection';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -72,6 +73,7 @@ interface AdminDashboardProps {
   themeMode: ThemeMode;
   onChangeTheme: (mode: ThemeMode) => void;
   currentUser: UserAccount | null;
+  onLogout?: () => void;
   onOpenSignIn?: () => void;
   onOpenInstructorDashboard?: () => void;
   onOpenStudentDashboard?: () => void;
@@ -89,6 +91,7 @@ type AdminTab =
   | 'certificates'
   | 'fees'
   | 'reports'
+  | 'analytics'
   | 'cms'
   | 'users'
   | 'settings'
@@ -151,6 +154,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   themeMode,
   onChangeTheme,
   currentUser,
+  onLogout,
   onOpenSignIn,
   onOpenInstructorDashboard,
   onOpenStudentDashboard
@@ -337,9 +341,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Top Navigation Bar */}
       <header className="bg-[var(--bg-panel)] border-b border-[#E9C349]/30 px-6 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#D4AF37] to-[#F5D468] text-black flex items-center justify-center font-bold font-serif text-xl shadow-lg">
-            D
-          </div>
+          <img
+              src="/images/dareLogo.jpeg"
+              alt="Dare Institute Logo"
+              className="w-10 h-10 rounded-full object-cover border border-[#E9C349]/40 shadow-lg shrink-0"
+            />
           <div>
             <h1 className="text-base font-serif font-bold text-[var(--text-primary)] tracking-wide flex items-center gap-2">
               Dare Beauty Institute
@@ -398,6 +404,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             currentLang={currentLang}
             onOpenApply={() => {}}
           />
+
+          <button
+            onClick={onLogout}
+            title="Sign Out"
+            className="p-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all border border-red-500/20"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
@@ -542,6 +556,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             <button
+              onClick={() => setActiveTab('analytics')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
+                activeTab === 'analytics'
+                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              <span>Institute Analytics</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('reports')}
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'reports'
@@ -600,16 +626,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           {/* User Footer info inside Sidebar */}
-          <div className="pt-3 border-t border-[var(--border-default)] mt-4">
+          <div className="pt-3 border-t border-[var(--border-default)] mt-4 space-y-2">
             <div className="p-3 rounded-2xl bg-white/5 border border-[var(--border-default)] flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-[#E9C349] text-black font-bold flex items-center justify-center text-xs">
-                {currentUser?.fullName?.charAt(0) || 'A'}
-              </div>
+              <img
+                src="/images/dareLogo.jpeg"
+                alt="Dare"
+                className="w-8 h-8 rounded-full object-cover border border-[#E9C349]/40 shrink-0"
+              />
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-bold text-[var(--text-primary)] truncate">{currentUser?.fullName || 'Super Administrator'}</div>
                 <div className="text-[10px] text-[var(--text-secondary)] font-mono">Role: {currentUser?.role || 'System Admin'}</div>
               </div>
             </div>
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span>Sign Out</span>
+            </button>
           </div>
         </aside>
 
@@ -1227,6 +1262,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* ANALYTICS TAB */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1 pb-2">
+                <div>
+                  <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Institute Analytics & Data Insights</h2>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">Real-time enrollment, attendance trends, and course popularity metrics.</p>
+                </div>
+              </div>
+              {/* Reuse the full AnalyticsSection component — it handles its own charts and state */}
+              <div className="-mx-6">
+                <AnalyticsSection currentLang={currentLang} />
               </div>
             </div>
           )}

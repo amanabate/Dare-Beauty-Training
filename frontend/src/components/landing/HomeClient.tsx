@@ -9,7 +9,6 @@ import { Programs } from './Programs';
 import { Features } from './Features';
 import { ProcessTimeline } from './ProcessTimeline';
 import { Statistics } from './Statistics';
-import { AnalyticsSection } from './AnalyticsSection';
 import { Gallery } from './Gallery';
 import { Testimonials } from './Testimonials';
 import { Admissions } from './Admissions';
@@ -22,7 +21,6 @@ import { ProgramDetailModal } from '../modals/ProgramDetailModal';
 import { ContactModal } from '../modals/ContactModal';
 import { Language, TrainingProgram, UserAccount } from '@/types';
 import { useTheme } from '../shared/ThemeProvider';
-
 export function HomeClient() {
   const searchParams = useSearchParams();
   const { themeMode, setThemeMode } = useTheme();
@@ -56,7 +54,11 @@ export function HomeClient() {
 
   const handleSignOut = () => {
     setUser(null);
-    try { localStorage.removeItem('dare_user_account'); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem('dare_user_account');
+      localStorage.removeItem('dare_auth_token');
+      localStorage.removeItem('dare_chat_history');
+    } catch { /* ignore */ }
   };
 
   return (
@@ -89,7 +91,6 @@ export function HomeClient() {
         <Features currentLang={currentLang} />
         <ProcessTimeline currentLang={currentLang} onOpenApply={() => handleOpenApply()} />
         <Statistics currentLang={currentLang} />
-        <AnalyticsSection currentLang={currentLang} />
         <Gallery currentLang={currentLang} />
         <Testimonials currentLang={currentLang} />
         <Admissions currentLang={currentLang} onOpenApply={() => handleOpenApply()} />

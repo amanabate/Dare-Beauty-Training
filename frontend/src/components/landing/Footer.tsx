@@ -27,13 +27,20 @@ export const Footer: React.FC<FooterProps> = ({ currentLang, onOpenApply, onOpen
           
           {/* Column 1: Institute Identity */}
           <div className="space-y-4">
-            <a href="#home" className="block">
-              <span className="font-serif text-2xl font-bold text-[#D4AF37] block">
-                Dare Institute
-              </span>
-              <span className="text-[10px] text-gray-300 tracking-widest uppercase block mt-1">
-                {currentLang === 'en' ? instituteInfo.nameEn : currentLang === 'am' ? instituteInfo.nameAmharic : (instituteInfo.nameOromo || instituteInfo.nameEn)}
-              </span>
+            <a href="#home" className="flex items-center gap-3 group">
+              <img
+                src="/images/dareLogo.jpeg"
+                alt="Dare Institute Logo"
+                className="w-12 h-12 rounded-full object-cover border border-[#D4AF37]/50 shadow-lg group-hover:border-[#D4AF37] transition-all shrink-0"
+              />
+              <div>
+                <span className="font-serif text-xl font-bold text-[#D4AF37] block group-hover:text-[#F5D468] transition-colors">
+                  Dare Institute
+                </span>
+                <span className="text-[10px] text-gray-300 tracking-widest uppercase block mt-0.5">
+                  {currentLang === 'en' ? instituteInfo.nameEn : currentLang === 'am' ? instituteInfo.nameAmharic : (instituteInfo.nameOromo || instituteInfo.nameEn)}
+                </span>
+              </div>
             </a>
 
             <p className="text-gray-400 leading-relaxed text-xs">
@@ -81,7 +88,6 @@ export const Footer: React.FC<FooterProps> = ({ currentLang, onOpenApply, onOpen
                 aria-label="TikTok @dere295"
               >
                 <TikTokIcon className="w-4 h-4" />
-                <span>TikTok @dere295</span>
               </a>
               <a
                 href={instituteInfo.socialLinks.youtube}

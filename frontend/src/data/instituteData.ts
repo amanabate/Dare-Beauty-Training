@@ -241,6 +241,105 @@ export const testimonialsData: Testimonial[] = [
     amharicQuote: 'የላሽ እና የጥፍር አሰራርን በጥራት ተምሬ አሁን ላይ በበቂ ሁኔታ የራሴ ደንበኞች አሉኝ።',
     oromoQuote: 'Tooftaa lashii fi qeensaa sadarkaan baradhee ammma maamiltoota hedduu qaba.',
     rating: 5
+  },
+  {
+    id: 't4',
+    name: 'Selamawit Girma',
+    role: 'Bridal Makeup Artist & Studio Founder',
+    program: 'Professional Makeup Artistry',
+    photo: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=400&q=80',
+    quote: 'Within six months I had my own makeup studio and a waiting list of brides. Dare\'s makeup program is truly world-class — the colour theory and airbrush modules alone changed my career.',
+    amharicQuote: 'ከስድስት ወር ባልበለጠ ጊዜ ውስጥ የራሴ ስቱዲዮ ከፍቼ ብዙ ጎጆ ቀዳሚዎቼ ተጠባባቂ ሆኑ።',
+    oromoQuote: 'Ji\'a jaha keessatti mana shaakalaa mataa koo banee heerumtoonni hedduu na eegan.',
+    rating: 5
+  },
+  {
+    id: 't5',
+    name: 'Dawit Bekele',
+    role: 'Head Barber, Bole International Airport Zone',
+    program: 'Barbering & Men\'s Grooming',
+    photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80',
+    quote: 'The fading techniques and beard sculpture modules at Dare are unmatched. I now run a premium barber shop and train my own junior staff using what I learned here.',
+    amharicQuote: 'ፌዲንግ እና የፂም ቅርፃቅርፅ ስልጠናው ከፍተኛ ጥቅም ሰጥቶኛል። አሁን ፕሪሚየም ሳሎን አስኬዳለሁ።',
+    oromoQuote: 'Teekniikii fading fi barsiifna areeda Dare keessatti nan baradhe. Amma saloon premium qaba.',
+    rating: 5
+  },
+  {
+    id: 't6',
+    name: 'Meron Haile',
+    role: 'Skincare Therapist, International Spa Chain',
+    program: 'Beauty Therapy & Skincare',
+    photo: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80',
+    quote: 'The anatomy and skincare science curriculum prepared me for a job at an international spa brand in Dubai. Dare\'s certificate opened doors I never imagined.',
+    amharicQuote: 'የቆዳ እንክብካቤ ሳይንስ ትምህርቱ ዱባይ ለሚሰራ ዓለም አቀፍ ስፓ ብራንድ ቅጥር አዘጋጀኝ።',
+    oromoQuote: 'Saayinsii kunuunsa gogaa nan baradhee. Amma spaa idila-addunyaa Dubai keessatti hojjedha.',
+    rating: 5
+  },
+  {
+    id: 't7',
+    name: 'Tigist Worku',
+    role: 'Head Colorist, Top Addis Ababa Salon',
+    program: 'Hair Dressing & Advanced Color',
+    photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+    quote: 'The balayage and colour-correction modules at Dare are genuinely advanced. My clients now travel from across the city for colour work. Best training investment of my life.',
+    amharicQuote: 'ባሌያጅ እና የቀለም ማስተካከያ ሞጁሎቹ ሙያዊ ናቸው። ደንበኞቼ ከሀገሪቱ ሁሉ ቀለም ልሰራ ይመጣሉ።',
+    oromoQuote: 'Modulewwan balayage fi sirreessa halluu dhuguma sadarkaa olaanaadha. Maamiltonni koo magaalaa maraa na barbaadu.',
+    rating: 5
+  },
+  {
+    id: 't8',
+    name: 'Abebe Tesfaye',
+    role: 'COC-Certified TVET Instructor',
+    program: 'Hair Dressing & Styling',
+    photo: 'https://images.unsplash.com/photo-1500048993953-d23a436266cf?auto=format&fit=crop&w=400&q=80',
+    quote: 'I came as a student and now I teach. The COC examination preparation at Dare was thorough — I passed with distinction and was offered a teaching position right away.',
+    amharicQuote: 'ተማሪ ሆኜ ገብቼ አሁን አስተምራለሁ። COC ፈተናዬን ከፍተኛ ውጤት አምጥቼ ወዲያው ለትምህርት ቀርቤ ተቀጠርኩ።',
+    oromoQuote: 'Barattuu tahuun gallee amma barsiisota. Qormaata COC sadarkaa olaanaan darbe yeruma ta\'een hojii barsiisummaatti waamamne.',
+    rating: 5
+  },
+  {
+    id: 't9',
+    name: 'Lidya Mengistu',
+    role: 'Waxing & Threading Studio Owner',
+    program: 'Hair Waxing & Body Treatments',
+    photo: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=400&q=80',
+    quote: 'I finished the waxing module in just one month. With that skill plus the business mentorship Dare gave me, I opened my own studio in Kazanchis within three months.',
+    amharicQuote: 'ዋክሲንግ ሞጁሉን ባንድ ወር አጠናቀቅሁ። ከስልጠናው ተነስቼ ሶስት ወር ባልሞላ ጊዜ ስቱዲዮ ከፍቻለሁ።',
+    oromoQuote: 'Modulii waxing ji\'a tokkotti xumure. Ji\'a sadii keessatti mana shaakala mataa koo banuu danda\'e.',
+    rating: 5
+  },
+  {
+    id: 't10',
+    name: 'Eyerusalem Tadesse',
+    role: 'Nail Studio Owner & Trainer',
+    program: 'Nail Care Technology',
+    photo: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?auto=format&fit=crop&w=400&q=80',
+    quote: 'Dare taught me gel, acrylic, and nail art fundamentals. I now run a studio with two employees and also teach Dare\'s nail course on weekends.',
+    amharicQuote: 'ጄልን፣ አክሪሊክን እና ኔይል አርት ፈንዳሜንታሎችን ተምሬ ስቱዲዮ ከፍቼ ሁለት ሰራተኞች አሉኝ።',
+    oromoQuote: 'Jel, acrylic fi art qeensaa nan baradhe. Amma mana shaakala qabu hojjetoota lama wajjin hojjedha.',
+    rating: 5
+  },
+  {
+    id: 't11',
+    name: 'Kalkidan Assefa',
+    role: 'Film & TV Makeup Artist',
+    program: 'Professional Makeup Artistry',
+    photo: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=400&q=80',
+    quote: 'Dare\'s special-effects and editorial makeup units helped me break into the Ethiopian film industry. I have now worked on over 15 productions and three music videos.',
+    amharicQuote: 'ስፔሻል ኢፌክቶች እና ኤዲቶሪያል ሜካፕ ሞጁሎቹ ወደ ፊልም ኢንዱስትሪ እንድገባ ረዱኝ። 15+ ፕሮዳክሽን ሰርቻለሁ።',
+    oromoQuote: 'Modulewwan special-effects fi editorial makeup gargaartee industirii fiilimii keessa galuu danda\'e.',
+    rating: 5
+  },
+  {
+    id: 't12',
+    name: 'Robel Mulugeta',
+    role: 'Freelance Grooming Specialist',
+    program: 'Barbering & Men\'s Grooming',
+    photo: 'https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=400&q=80',
+    quote: 'I travel to clients — weddings, graduations, corporate events. Dare\'s portable grooming unit training made me the go-to specialist for high-profile events in Addis.',
+    amharicQuote: 'ሠርግ፣ ምረቃ፣ ኮርፖሬት ዝግጅቶች ጋር እሄዳለሁ። ደሬ ለዚህ ባለሙያ አደረገኝ።',
+    oromoQuote: 'Fuudha, eebbifama fi naannoo daldalaatti deema. Dare ogummaa portable grooming naaf baarsise.',
+    rating: 5
   }
 ];
 
