@@ -54,7 +54,11 @@ export function HomeClient() {
 
   const handleSignOut = () => {
     setUser(null);
-    try { localStorage.removeItem('dare_user_account'); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem('dare_user_account');
+      localStorage.removeItem('dare_auth_token');
+      localStorage.removeItem('dare_chat_history');
+    } catch { /* ignore */ }
   };
 
   return (

@@ -37,7 +37,8 @@ import {
   Check,
   Star,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  LogOut,
 } from 'lucide-react';
 import { Language, ThemeMode, UserAccount } from '../../types';
 import { AttendanceHeatmap } from './AttendanceHeatmap';
@@ -53,6 +54,7 @@ interface StudentDashboardProps {
   themeMode: ThemeMode;
   onChangeTheme: (mode: ThemeMode) => void;
   currentUser?: UserAccount | null;
+  onLogout?: () => void;
 }
 
 type StudentTab =
@@ -138,7 +140,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onChangeLang,
   themeMode,
   onChangeTheme,
-  currentUser
+  currentUser,
+  onLogout,
 }) => {
   const [activeTab, setActiveTab] = useState<StudentTab>('overview');
   const [profilePhoto, setProfilePhoto] = useState<string>(STUDENT_DATA.photo);
@@ -321,6 +324,14 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           >
             {themeMode === 'light' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-[#E9C349]" />}
           </button>
+
+          <button
+            onClick={onLogout}
+            title="Sign Out"
+            className="p-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all border border-red-500/20"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
@@ -477,8 +488,25 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </button>
           </div>
 
-          <div className="pt-3 border-t border-[var(--border-default)] mt-4 text-[10px] text-[var(--text-muted)] font-mono text-center">
-            Dare Institute Student Portal v2.6
+          <div className="pt-3 border-t border-[var(--border-default)] mt-4 space-y-2">
+            <div className="p-3 rounded-2xl bg-white/5 border border-[var(--border-default)] flex items-center space-x-3">
+              <img
+                src={profilePhoto}
+                alt={STUDENT_DATA.fullName}
+                className="w-8 h-8 rounded-full object-cover border-2 border-[#E9C349] shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-bold text-[var(--text-primary)] truncate">{STUDENT_DATA.fullName}</div>
+                <div className="text-[10px] text-[var(--text-secondary)] font-mono">Student</div>
+              </div>
+            </div>
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span>Sign Out</span>
+            </button>
           </div>
         </aside>
 

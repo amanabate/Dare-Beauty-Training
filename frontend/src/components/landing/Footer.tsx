@@ -88,7 +88,6 @@ export const Footer: React.FC<FooterProps> = ({ currentLang, onOpenApply, onOpen
                 aria-label="TikTok @dere295"
               >
                 <TikTokIcon className="w-4 h-4" />
-                <span>TikTok @dere295</span>
               </a>
               <a
                 href={instituteInfo.socialLinks.youtube}
