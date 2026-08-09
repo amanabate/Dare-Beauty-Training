@@ -64,9 +64,11 @@ export function SignUpPage() {
 
             {/* Brand mark */}
             <div className="flex items-center space-x-2.5 mb-7">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#D4AF37] to-[#F5D468] flex items-center justify-center shadow-lg shadow-[#D4AF37]/30 flex-shrink-0">
-                <Sparkles className="w-4 h-4 text-black" />
-              </div>
+              <img
+                src="/images/dareLogo.jpeg"
+                alt="Dare Institute Logo"
+                className="w-9 h-9 rounded-full object-cover border border-[#D4AF37]/50 shadow-lg shrink-0"
+              />
               <span className="text-[10px] font-mono tracking-[0.2em] text-[#E9C349] uppercase font-bold">
                 Dare Institute Portal
               </span>

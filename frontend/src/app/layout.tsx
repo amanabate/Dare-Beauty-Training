@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/shared/ThemeProvider';
+import { AdminChatWidget } from '@/components/dashboard/AdminChatWidget';
 
 export const metadata: Metadata = {
   title: 'Dare Beauty Training Institute | ደሬ የውበት ማሰልጠኛ ተቋም',
@@ -16,6 +17,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/images/dareLogo.jpeg" type="image/jpeg" />
+        <link rel="apple-touch-icon" href="/images/dareLogo.jpeg" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -30,7 +33,10 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-[var(--bg-base)] text-[var(--text-primary)] font-sans antialiased selection:bg-[#E9C349] selection:text-black min-h-screen">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <AdminChatWidget />
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -339,9 +339,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Top Navigation Bar */}
       <header className="bg-[var(--bg-panel)] border-b border-[#E9C349]/30 px-6 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#D4AF37] to-[#F5D468] text-black flex items-center justify-center font-bold font-serif text-xl shadow-lg">
-            D
-          </div>
+          <img
+              src="/images/dareLogo.jpeg"
+              alt="Dare Institute Logo"
+              className="w-10 h-10 rounded-full object-cover border border-[#E9C349]/40 shadow-lg shrink-0"
+            />
           <div>
             <h1 className="text-base font-serif font-bold text-[var(--text-primary)] tracking-wide flex items-center gap-2">
               Dare Beauty Institute

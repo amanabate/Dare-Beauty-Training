@@ -191,13 +191,13 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
             <div className="relative flex-1 w-full h-full min-h-[360px]">
               <iframe
                 title="Dare Institute Campus Interactive Map Location"
-                src={embedMapUrl}
+                src="https://www.google.com/maps/embed?pb=!1m16!1m12!1m3!1d389.20640050535764!2d38.66450443215932!3d9.07043707038044!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!2m1!1sTsara%20Tsion%2C%20Burayu%2C%20Sheger%20City%2C%20Oromia%2C%20Ethiopia!5e1!3m2!1sen!2set!4v1786168844443!5m2!1sen!2set"
                 width="100%"
                 height="100%"
                 style={{ border: 0, minHeight: '380px' }}
                 allowFullScreen
                 loading="lazy"
-                referrerPolicy="no-referrer"
+                referrerPolicy="strict-origin-when-cross-origin"
                 className="w-full h-full"
               />
             </div>

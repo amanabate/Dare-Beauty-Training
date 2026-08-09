@@ -118,13 +118,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className={`flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-2' : 'py-3'}`}>
 
           {/* Logo */}
-          <a href="#home" className="flex flex-col group focus:outline-none shrink-0">
-            <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-[#111111] dark:text-white group-hover:text-[#D4AF37] transition-colors">
-              Dare Institute
-            </span>
-            <span className="text-[9px] tracking-widest text-[#A08000] dark:text-[#D4AF37] uppercase font-semibold font-mono leading-tight">
-              {currentLang === 'en' ? 'Beauty Training Institute' : currentLang === 'am' ? 'ደሬ የውበት ማሰልጠኛ ተቋም' : 'Dhaabbata Leenjii Miidhaginaa'}
-            </span>
+          <a href="#home" className="flex items-center gap-2.5 group focus:outline-none shrink-0">
+            <img
+              src="/images/dareLogo.jpeg"
+              alt="Dare Institute Logo"
+              className="w-9 h-9 rounded-full object-cover border border-[#D4AF37]/50 shadow group-hover:border-[#D4AF37] transition-all"
+            />
+            <div className="flex flex-col">
+              <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-[#111111] dark:text-white group-hover:text-[#D4AF37] transition-colors">
+                Dare Institute
+              </span>
+              <span className="text-[9px] tracking-widest text-[#A08000] dark:text-[#D4AF37] uppercase font-semibold font-mono leading-tight">
+                {currentLang === 'en' ? 'Beauty Training Institute' : currentLang === 'am' ? 'ደሬ የውበት ማሰልጠኛ ተቋም' : 'Dhaabbata Leenjii Miidhaginaa'}
+              </span>
+            </div>
           </a>
 
           {/* Desktop nav links */}

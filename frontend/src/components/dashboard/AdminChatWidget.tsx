@@ -2,189 +2,160 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  MessageCircle, 
-  X, 
-  Send, 
-  Sparkles, 
-  Bot, 
-  User, 
-  Database, 
-  RefreshCw, 
-  ShieldCheck, 
-  ChevronRight,
-  AlertCircle,
-  Copy,
-  Check,
-  FileSpreadsheet
-} from 'lucide-react';
-import { Language } from '../../types';
+import { X, Send, Sparkles, Bot, User, RefreshCw, Copy, Check } from 'lucide-react';
 
 interface Message {
   id: string;
   sender: 'user' | 'assistant';
   text: string;
   timestamp: string;
-  sources?: string[];
-  queryMetadata?: {
-    model: string;
-    recordsRetrieved: number;
-    latencyMs: number;
-  };
 }
 
 interface AdminChatWidgetProps {
-  currentLang?: Language;
-  userRole?: 'Admin' | 'Instructor';
-  onOpenReportsModal?: () => void;
+  userRole?: 'Admin' | 'Instructor' | 'Student' | 'guest';
 }
 
 const PRESET_QUESTIONS = [
-  "How many students are enrolled in Hair Dressing?",
-  "Which students have pending payments?",
-  "Show me attendance below 75% this month",
-  "List students ready for certificate generation",
-  "What's average competency for Barbering?"
+  'What programs does Dare Institute offer?',
+  'How long is the Hair Dressing course?',
+  'What are the admission requirements?',
+  'What is the minimum attendance for COC?',
+  'Are payment installments available?',
 ];
 
-export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({
-  currentLang = 'en',
-  userRole = 'Admin',
-  onOpenReportsModal
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(1);
-  const [input, setInput] = useState('');
+export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({ userRole = 'guest' }) => {
+  const [isOpen, setIsOpen]     = useState(false);
+  const [input, setInput]       = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingId, setStreamingId] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(1);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const INITIAL_WELCOME_MSG: Message = {
+  const welcomeMsg: Message = {
     id: 'welcome-1',
     sender: 'assistant',
-    text: 'Hello Admin! I am your AI Institute Assistant powered by Groq (`llama-3.1-8b-instant`). Ask me anything about enrolled students, course competencies, attendance logs, or pending payments.',
+    text: `Hi! I'm the Dare Institute AI Assistant.\n\nAsk me anything about our programs, admissions, fees, attendance, or certificates.`,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    sources: ['Prisma DB: Live Institute Datastore']
   };
 
-  // Start with the welcome message; hydrate from localStorage after mount
-  const [messages, setMessages] = useState<Message[]>([INITIAL_WELCOME_MSG]);
+  const [messages, setMessages] = useState<Message[]>([welcomeMsg]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Ref to cancel any in-progress typing animation when a new message arrives
+  const typingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Hydrate from localStorage on client mount
+  // Clean up timer on unmount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('dare_admin_chat_history');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-        }
-      }
-    } catch {
-      // ignore
-    }
+    return () => {
+      if (typingTimerRef.current) clearInterval(typingTimerRef.current);
+    };
   }, []);
 
-  // Save to localStorage whenever messages state updates
+  // Persist chat history per session
   useEffect(() => {
     try {
-      localStorage.setItem('dare_admin_chat_history', JSON.stringify(messages));
-    } catch {
-      // ignore quota errors
-    }
+      const saved = localStorage.getItem('dare_chat_history');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem('dare_chat_history', JSON.stringify(messages)); } catch { /* ignore */ }
   }, [messages]);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   useEffect(() => {
     if (isOpen) {
       setUnreadCount(0);
-      scrollToBottom();
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
     }
   }, [isOpen, messages]);
 
-  const handleToggle = () => {
-    setIsOpen(prev => !prev);
-  };
-
-  // Simulated AI response generator reflecting real Prisma context retrieval logic
-  const processQuery = async (userQuestion: string) => {
-    setIsLoading(true);
-    const qLower = userQuestion.toLowerCase();
-    
-    // Simulate network delay for API query
-    await new Promise(res => setTimeout(res, 900));
-
-    let replyText = '';
-    let sources: string[] = [];
-    let recordCount = 0;
-
-    if (qLower.includes('hair dressing') || qLower.includes('hairdressing')) {
-      replyText = `Based on live Prisma records in PostgreSQL:\n- **Total Enrolled in Hair Dressing**: 42 Active Students (28 Female, 14 Male)\n- **Completion Rate**: 88%\n- **Top Unit**: Advanced Bridal Styling (94% Competency Rate)`;
-      sources = ['Prisma.Student.count({ where: { course: "Hair Dressing" } })', 'Prisma.Course.findUnique()'];
-      recordCount = 42;
-    } else if (qLower.includes('pending payment') || qLower.includes('pending')) {
-      replyText = `Found **4 students** with pending tuition balance:\n1. **Abebe Kebede** — Hair Dressing (Bal: 2,500 ETB)\n2. **Tigist Haile** — Makeup Art (Bal: 1,800 ETB)\n3. **Chala Bekele** — Barbering (Bal: 3,000 ETB)\n4. **Selam Alemu** — Nail Tech (Bal: 1,200 ETB)\n\nTotal Outstanding: **8,500 ETB**.`;
-      sources = ['Prisma.Payment.findMany({ where: { status: "PENDING" } })', 'Prisma.Student.findMany()'];
-      recordCount = 4;
-    } else if (qLower.includes('attendance') || qLower.includes('75%')) {
-      replyText = `Attendance Alert (<75% threshold for current month):\n- **Dawit Tadesse** (Barbering): 68% attendance (14/21 sessions)\n- **Meron Zewde** (Beauty Therapy): 71% attendance (15/21 sessions)\n\n*Action Suggested*: Flagged for instructor follow-up before final unit exam.`;
-      sources = ['Prisma.Attendance.groupBy({ where: { date: { gte: MonthStart } } })'];
-      recordCount = 2;
-    } else if (qLower.includes('certificate') || qLower.includes('ready')) {
-      replyText = `**3 Students** have satisfied all course unit competencies & zero balance, ready for Certificate Generation:\n- **Bethlehem Worku** — REG-2026-089 (Hair Dressing)\n- **Kaleb Desta** — REG-2026-104 (Barbering)\n- **Hiwot Tsegaye** — REG-2026-112 (Makeup Art)\n\nWould you like me to trigger bulk PDF export with QR verification?`;
-      sources = ['Prisma.Result.findMany({ where: { competency: "PASS" } })', 'Prisma.Payment.findMany({ status: "PAID" })'];
-      recordCount = 3;
-    } else if (qLower.includes('barbering') || qLower.includes('competency')) {
-      replyText = `Barbering Course Competency Summary:\n- **Average Practical Score**: 89.4%\n- **Fading & Shaving Unit**: 92% pass rate\n- **Sanitization & Tool Care**: 98% pass rate\n- **Total Assessed Students**: 35`;
-      sources = ['Prisma.Result.aggregate({ avg: { competencyScore: true } })'];
-      recordCount = 35;
-    } else {
-      replyText = `Retrieved context for query: "${userQuestion}"\n\nI checked active records across **Students**, **Courses**, **Payments**, and **Attendance** tables. Currently, 156 active students are registered across 8 vocational programs. All systems operational.`;
-      sources = ['Prisma.Student.findMany()', 'Prisma.Course.findMany()'];
-      recordCount = 156;
+  const processQuery = async (question: string) => {
+    // Cancel any previous typing animation still running
+    if (typingTimerRef.current) {
+      clearInterval(typingTimerRef.current);
+      typingTimerRef.current = null;
     }
 
-    const aiMsg: Message = {
-      id: `msg-${Date.now()}`,
-      sender: 'assistant',
-      text: replyText,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      sources: sources,
-      queryMetadata: {
-        model: 'llama-3.1-8b-instant',
-        recordsRetrieved: recordCount,
-        latencyMs: 340
-      }
-    };
+    setIsLoading(true);
 
-    setMessages(prev => [...prev, aiMsg]);
-    setIsLoading(false);
+    const history = messages
+      .filter(m => m.id !== 'welcome-1')
+      .map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text }));
 
-    // If widget closed, increment unread badge
-    if (!isOpen) {
-      setUnreadCount(prev => prev + 1);
+    try {
+      const res  = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: question, history, role: userRole }),
+      });
+      const data = await res.json();
+
+      setIsLoading(false);
+
+      const fullText: string = res.ok
+        ? (data.reply ?? '')
+        : `⚠️ ${data?.error ?? `Request failed (${res.status})`}`;
+
+      // Insert blank message then type into it character by character
+      const sid = `ai-${Date.now()}`;
+      setStreamingId(sid);
+      setMessages(prev => [...prev, {
+        id: sid,
+        sender: 'assistant',
+        text: '',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }]);
+
+      // Reveal ~3 characters per tick at ~18ms — smooth and fast like ChatGPT
+      let index = 0;
+      const CHUNK = 2;
+      const DELAY = 30;
+
+      typingTimerRef.current = setInterval(() => {
+        index += CHUNK;
+        const visible = fullText.slice(0, index);
+
+        setMessages(prev => prev.map(m =>
+          m.id === sid ? { ...m, text: visible } : m
+        ));
+
+        // Auto-scroll while typing
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+
+        if (index >= fullText.length) {
+          clearInterval(typingTimerRef.current!);
+          typingTimerRef.current = null;
+          setStreamingId(null);
+          if (!isOpen) setUnreadCount(n => n + 1);
+        }
+      }, DELAY);
+    } catch {
+      setIsLoading(false);
+      setStreamingId(null);
+      setMessages(prev => [...prev, {
+        id: `err-${Date.now()}`,
+        sender: 'assistant',
+        text: '⚠️ Could not reach the AI service. Make sure the backend is running.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }]);
     }
   };
 
   const handleSend = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!input.trim() || isLoading) return;
-
-    const userText = input.trim();
-    const userMsg: Message = {
+    const text = input.trim();
+    setMessages(prev => [...prev, {
       id: `usr-${Date.now()}`,
       sender: 'user',
-      text: userText,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages(prev => [...prev, userMsg]);
+      text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    }]);
     setInput('');
-    processQuery(userText);
+    processQuery(text);
   };
 
   const handleCopy = (id: string, text: string) => {
@@ -193,205 +164,115 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleClear = () => {
+    setMessages([welcomeMsg]);
+    try { localStorage.removeItem('dare_chat_history'); } catch { /* ignore */ }
+  };
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
-      {/* Floating Trigger Icon Button */}
-      <div className="relative">
-        <motion.button
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.94 }}
-          onClick={handleToggle}
-          className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 relative ${
-            isOpen
-              ? 'bg-[var(--bg-base)] text-[#E9C349] border-2 border-[#E9C349]'
-              : 'bg-gradient-to-tr from-[#D4AF37] via-[#E9C349] to-[#F5D468] text-[#0F0F10] shadow-[0_4px_25px_rgba(212,175,55,0.45)]'
-          }`}
-          aria-label="Toggle Admin AI Assistant"
-        >
-          <AnimatePresence mode="wait">
-            {isOpen ? (
-              <motion.div
-                key="close"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <X className="w-6 h-6" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="open"
-                initial={{ rotate: 90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: -90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="relative"
-              >
-                <Sparkles className="w-6 h-6 fill-current" />
-              </motion.div>
-            )}
-          </AnimatePresence>
+    <div className="fixed bottom-6 right-6 z-[9999] font-sans">
 
-          {/* Unread Badge Indicator */}
-          {!isOpen && unreadCount > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0F0F10] shadow"
-            >
-              {unreadCount}
-            </motion.span>
-          )}
-        </motion.button>
-      </div>
+      {/* ── Floating trigger button ── */}
+      <motion.button
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.94 }}
+        onClick={() => setIsOpen(v => !v)}
+        aria-label="Open Dare AI Assistant"
+        className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 relative ${
+          isOpen
+            ? 'bg-[#111] text-[#E9C349] border-2 border-[#E9C349]'
+            : 'bg-gradient-to-tr from-[#D4AF37] via-[#E9C349] to-[#F5D468] text-black shadow-[0_4px_25px_rgba(212,175,55,0.5)]'
+        }`}
+      >
+        <AnimatePresence mode="wait">
+          {isOpen
+            ? <motion.div key="x"  initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}><X className="w-6 h-6" /></motion.div>
+            : <motion.div key="sp" initial={{ rotate:  90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.18 }}><Sparkles className="w-6 h-6 fill-current" /></motion.div>
+          }
+        </AnimatePresence>
 
-      {/* Floating Expandable Chat Window */}
+        {!isOpen && unreadCount > 0 && (
+          <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
+            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white shadow">
+            {unreadCount}
+          </motion.span>
+        )}
+      </motion.button>
+
+      {/* ── Chat panel ── */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.92 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="absolute bottom-18 right-0 w-[calc(100vw-2rem)] sm:w-[420px] h-[560px] max-h-[80vh] bg-[#FAFAFA] dark:bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl shadow-2xl border border-[var(--border-default)] flex flex-col overflow-hidden backdrop-blur-xl"
+            initial={{ opacity: 0, y: 18, scale: 0.93 }}
+            animate={{ opacity: 1, y: 0,  scale: 1    }}
+            exit={{   opacity: 0, y: 18, scale: 0.93 }}
+            transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+            className="absolute bottom-[72px] right-0 w-[calc(100vw-2rem)] sm:w-[400px] h-[540px] max-h-[80vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-[var(--border-default)] bg-[var(--bg-surface)]"
           >
             {/* Header */}
-            <div className="px-4 py-3.5 bg-[var(--bg-base)] text-white border-b border-[#E9C349]/30 flex items-center justify-between shrink-0">
-              <div className="flex items-center space-x-3">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#D4AF37] to-[#F5D468] text-black flex items-center justify-center shadow-md shrink-0">
-                  <Bot className="w-5 h-5" />
-                </div>
+            <div className="px-4 py-3 bg-[var(--bg-base)] border-b border-[#E9C349]/25 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/images/dareLogo.jpeg"
+                  alt="Dare Institute Logo"
+                  className="w-8 h-8 rounded-full object-cover border border-[#E9C349]/40 shadow shrink-0"
+                />
                 <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-serif font-bold text-sm text-white tracking-wide">
-                      Dare AI Assistant
-                    </h3>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E9C349]/20 text-[#E9C349] border border-[#E9C349]/40 font-semibold">
-                      {userRole}
-                    </span>
-                  </div>
-                  <p className="text-[11px] font-mono text-gray-300 flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>RAG Engine • llama-3.1-8b-instant</span>
+                  <h3 className="text-sm font-bold font-serif text-white leading-tight">Dare AI Assistant</h3>
+                  <p className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                    Online
                   </p>
                 </div>
               </div>
-
-              <div className="flex items-center space-x-1">
-                {onOpenReportsModal && (
-                  <button
-                    type="button"
-                    onClick={onOpenReportsModal}
-                    className="p-1.5 text-emerald-400 hover:text-emerald-300 transition-colors rounded-lg hover:bg-white/10 flex items-center space-x-1 text-xs font-semibold px-2"
-                    title="Open CSV / PDF Export Manager"
-                  >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    <span className="hidden sm:inline">Export Center</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMessages([INITIAL_WELCOME_MSG]);
-                    try { localStorage.removeItem('dare_admin_chat_history'); } catch {}
-                  }}
-                  className="p-1.5 text-gray-400 hover:text-[#E9C349] transition-colors rounded-lg hover:bg-white/10"
-                  title="Clear Conversation History"
-                >
+              <div className="flex items-center gap-1">
+                <button onClick={handleClear} title="Clear chat"
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[#E9C349] hover:bg-white/10 transition-all">
                   <RefreshCw className="w-4 h-4" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
-                >
-                  <X className="w-5 h-5" />
+                <button onClick={() => setIsOpen(false)} title="Close"
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-white hover:bg-white/10 transition-all">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Security Guard & Export Ribbon */}
-            <div className="bg-[#E9C349]/10 border-b border-[#E9C349]/20 px-3 py-1.5 flex items-center justify-between text-[11px] font-mono text-[var(--text-secondary)] shrink-0">
-              <span className="flex items-center space-x-1 text-[#D4AF37]">
-                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                <span>Prisma RAG Grounded • No Hallucinations</span>
-              </span>
-              {onOpenReportsModal && (
-                <button
-                  onClick={onOpenReportsModal}
-                  className="text-[10px] text-emerald-400 hover:underline font-bold flex items-center space-x-1"
-                >
-                  <FileSpreadsheet className="w-3 h-3" />
-                  <span>CSV/PDF Export</span>
-                </button>
-              )}
-            </div>
-
-            {/* Chat Messages Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex items-start space-x-2.5 ${
-                    msg.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-                  }`}
-                >
-                  <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold ${
-                      msg.sender === 'user'
-                        ? 'bg-[#E9C349] text-black'
-                        : 'bg-[var(--bg-base)] text-[#E9C349] border border-[#E9C349]/40'
-                    }`}
-                  >
-                    {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
+              {messages.map(msg => (
+                <div key={msg.id} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                  {/* Avatar */}
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                    msg.sender === 'user'
+                      ? 'bg-[#E9C349] text-black'
+                      : 'bg-[var(--bg-panel)] text-[#E9C349] border border-[#E9C349]/30'
+                  }`}>
+                    {msg.sender === 'user' ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
                   </div>
 
-                  <div
-                    className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
-                      msg.sender === 'user'
-                        ? 'bg-[#E9C349] text-[#0F0F10] font-medium rounded-tr-xs shadow-sm'
-                        : 'bg-white dark:bg-[var(--bg-card)] border border-[var(--border-default)] text-[var(--text-primary)] rounded-tl-xs shadow-sm'
-                    }`}
-                  >
-                    <div className="whitespace-pre-line">
+                  {/* Bubble */}
+                  <div className={`group max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
+                    msg.sender === 'user'
+                      ? 'bg-[#E9C349] text-black font-medium rounded-br-sm'
+                      : 'bg-[var(--bg-panel)] border border-[var(--border-default)] text-[var(--text-primary)] rounded-bl-sm'
+                  }`}>
+                    <p className="whitespace-pre-line">
                       {msg.text}
-                    </div>
+                      {/* Blinking cursor while this message is being streamed */}
+                      {msg.id === streamingId && msg.text !== '' && (
+                        <span className="inline-block w-0.5 h-3.5 bg-[var(--text-primary)] ml-0.5 opacity-80 animate-pulse align-text-bottom" />
+                      )}
+                    </p>
 
-                    {/* Sources & Query Metadata */}
-                    {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-2.5 pt-2 border-t border-[var(--border-subtle)] space-y-1">
-                        <div className="text-[10px] font-mono font-bold text-[#D4AF37] flex items-center space-x-1">
-                          <Database className="w-3 h-3" />
-                          <span>Retrieved DB Context:</span>
-                        </div>
-                        {msg.sources.map((src, idx) => (
-                          <div key={idx} className="text-[10px] font-mono text-[var(--text-muted)] bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded truncate">
-                            {src}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Footer Info & Copy */}
-                    <div className="mt-1.5 flex items-center justify-between text-[9px] font-mono opacity-60">
+                    <div className="mt-1.5 flex items-center justify-between gap-2 text-[9px] opacity-50">
                       <span>{msg.timestamp}</span>
                       {msg.sender === 'assistant' && (
-                        <button
-                          onClick={() => handleCopy(msg.id, msg.text)}
-                          className="hover:text-[#E9C349] transition-colors flex items-center space-x-0.5"
-                        >
-                          {copiedId === msg.id ? (
-                            <>
-                              <Check className="w-2.5 h-2.5 text-emerald-500" />
-                              <span>Copied</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-2.5 h-2.5" />
-                              <span>Copy</span>
-                            </>
-                          )}
+                        <button onClick={() => handleCopy(msg.id, msg.text)}
+                          className="flex items-center gap-0.5 hover:opacity-100 transition-opacity">
+                          {copiedId === msg.id
+                            ? <><Check className="w-2.5 h-2.5 text-emerald-500" /><span>Copied</span></>
+                            : <><Copy className="w-2.5 h-2.5" /><span>Copy</span></>
+                          }
                         </button>
                       )}
                     </div>
@@ -399,58 +280,47 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({
                 </div>
               ))}
 
-              {/* Typing Indicator */}
-              {isLoading && (
-                <div className="flex items-start space-x-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-[var(--bg-base)] text-[#E9C349] border border-[#E9C349]/40 flex items-center justify-center shrink-0">
-                    <Bot className="w-4 h-4" />
+              {/* Typing indicator — shown only while waiting for first token */}
+              {streamingId && messages.find(m => m.id === streamingId)?.text === '' && (
+                <div className="flex items-end gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-[var(--bg-panel)] border border-[#E9C349]/30 text-[#E9C349] flex items-center justify-center shrink-0">
+                    <Bot className="w-3.5 h-3.5" />
                   </div>
-                  <div className="bg-white dark:bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl rounded-tl-xs px-4 py-3 flex items-center space-x-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="w-2 h-2 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-2 h-2 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                    <span className="text-[11px] font-mono text-[var(--text-muted)] ml-2">Executing Prisma RAG & Groq...</span>
+                  <div className="bg-[var(--bg-panel)] border border-[var(--border-default)] rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '120ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '240ms' }} />
                   </div>
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Preset Quick Questions */}
-            <div className="px-3 py-2 bg-white/50 dark:bg-black/20 border-t border-[var(--border-subtle)] shrink-0">
-              <span className="text-[10px] font-mono text-[var(--text-muted)] block mb-1.5 uppercase font-bold tracking-wider">
-                Quick Admin Prompts:
-              </span>
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                {PRESET_QUESTIONS.map((pq, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setInput(pq);
-                    }}
-                    className="whitespace-nowrap px-2.5 py-1 text-[11px] bg-white dark:bg-[var(--bg-card)] border border-[var(--border-default)] hover:border-[#E9C349] text-[var(--text-secondary)] hover:text-[#D4AF37] rounded-full transition-all shrink-0"
-                  >
-                    {pq}
+            {/* Preset prompts */}
+            <div className="px-3 pt-2 pb-1.5 border-t border-[var(--border-subtle)] bg-[var(--bg-base)] shrink-0">
+              <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                {PRESET_QUESTIONS.map((q, i) => (
+                  <button key={i} onClick={() => setInput(q)}
+                    className="whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-medium bg-[var(--bg-panel)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[#E9C349]/50 hover:text-[#D4AF37] transition-all shrink-0">
+                    {q}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Input Form Footer */}
-            <form onSubmit={handleSend} className="p-3 bg-white dark:bg-[var(--bg-panel)] border-t border-[var(--border-default)] flex items-center space-x-2 shrink-0">
+            {/* Input */}
+            <form onSubmit={handleSend}
+              className="p-3 bg-[var(--bg-surface)] border-t border-[var(--border-default)] flex items-center gap-2 shrink-0">
               <input
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about students, courses, payments..."
-                className="flex-1 bg-gray-100 dark:bg-[#222226] text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-[#E9C349] focus:bg-white dark:focus:bg-[var(--bg-card)] outline-none transition-all text-[var(--text-primary)] placeholder-[var(--text-muted)]"
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder="Ask about programs, fees, admissions…"
+                className="flex-1 text-xs px-3.5 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[#E9C349] text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none transition-all"
               />
-              <button
-                type="submit"
-                disabled={!input.trim() || isLoading}
-                className="w-9 h-9 rounded-xl bg-[#E9C349] text-[#0F0F10] hover:bg-[#f5d468] disabled:opacity-40 disabled:hover:bg-[#E9C349] transition-all flex items-center justify-center shrink-0 shadow-md font-bold"
-              >
+              <button type="submit" disabled={!input.trim() || isLoading}
+                className="w-9 h-9 rounded-xl bg-[#E9C349] text-black hover:brightness-110 disabled:opacity-40 transition-all flex items-center justify-center shrink-0 shadow">
                 <Send className="w-4 h-4" />
               </button>
             </form>

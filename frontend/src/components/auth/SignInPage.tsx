@@ -40,15 +40,22 @@ export function SignInPage() {
 
         <div className="absolute inset-0 flex flex-col justify-between p-14 z-10">
           {/* Logo */}
-          <Link href="/" className="group w-fit">
-            <span className="font-serif text-3xl font-bold text-white drop-shadow-lg group-hover:text-[#E9C349] transition-colors leading-none">
-              Dare Institute
-            </span>
-            <span className="block text-[11px] tracking-[0.25em] text-[#E9C349] uppercase font-mono mt-1">
-              {currentLang === 'en' ? 'Beauty Training Institute'
+          <Link href="/" className="group w-fit flex items-center gap-3">
+            <img
+              src="/images/dareLogo.jpeg"
+              alt="Dare Institute Logo"
+              className="w-12 h-12 rounded-full object-cover border-2 border-[#E9C349]/60 shadow-lg shrink-0"
+            />
+            <div>
+              <span className="font-serif text-2xl font-bold text-white drop-shadow-lg group-hover:text-[#E9C349] transition-colors leading-none block">
+                Dare Institute
+              </span>
+              <span className="block text-[11px] tracking-[0.25em] text-[#E9C349] uppercase font-mono mt-1">
+                {currentLang === 'en' ? 'Beauty Training Institute'
                 : currentLang === 'am' ? 'ደሬ የውበት ማሰልጠኛ ተቋም'
                 : 'Dhaabbata Leenjii Miidhaginaa'}
-            </span>
+              </span>
+            </div>
           </Link>
 
           {/* Bottom */}
@@ -105,9 +112,11 @@ export function SignInPage() {
 
             {/* Brand mark */}
             <div className="flex items-center space-x-2.5 mb-8">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#D4AF37] to-[#F5D468] flex items-center justify-center shadow-lg shadow-[#D4AF37]/30 flex-shrink-0">
-                <Sparkles className="w-4 h-4 text-black" />
-              </div>
+              <img
+                src="/images/dareLogo.jpeg"
+                alt="Dare Institute Logo"
+                className="w-9 h-9 rounded-full object-cover border border-[#D4AF37]/50 shadow-lg shrink-0"
+              />
               <span className="text-[10px] font-mono tracking-[0.2em] text-[#E9C349] uppercase font-bold">
                 Dare Institute Portal
               </span>
