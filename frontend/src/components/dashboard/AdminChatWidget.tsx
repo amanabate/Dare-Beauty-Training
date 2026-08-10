@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, Sparkles, Bot, User, RefreshCw, Copy, Check } from 'lucide-react';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
 interface Message {
   id: string;
   sender: 'user' | 'assistant';
@@ -15,42 +18,144 @@ interface AdminChatWidgetProps {
   userRole?: 'Admin' | 'Instructor' | 'Student' | 'guest';
 }
 
-const PRESET_QUESTIONS = [
-  'What programs does Dare Institute offer?',
-  'How long is the Hair Dressing course?',
-  'What are the admission requirements?',
-  'What is the minimum attendance for COC?',
-  'Are payment installments available?',
-];
+// ─────────────────────────────────────────────────────────────────────────────
+// Language detection
+// 'am' = Amharic (Ethiopic script)  'om' = Afaan Oromo  'en' = English (default)
+// ─────────────────────────────────────────────────────────────────────────────
+type Lang = 'en' | 'om' | 'am';
 
-export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({ userRole = 'guest' }) => {
-  const [isOpen, setIsOpen]     = useState(false);
-  const [input, setInput]       = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [streamingId, setStreamingId] = useState<string | null>(null);
-  const [unreadCount, setUnreadCount] = useState(1);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+function detectLang(text: string): Lang {
+  // 1. Ethiopic Unicode block → always Amharic
+  if (/[\u1200-\u137F]/.test(text)) return 'am';
 
-  const welcomeMsg: Message = {
+  // 2. Oromo-specific diacritics (ʼ, x̧, ɗ, etc. uncommon in English)
+  if (/[ĉčšžŋ]/i.test(text)) return 'om';
+
+  const lower = text.toLowerCase();
+
+  // 3. Expanded Afaan Oromo word list — covers common conversational phrases,
+  //    greetings, question words, and topic words a user would actually type.
+  const oromoWords = [
+    // greetings & politeness
+    'baga','nagaan','dhuftan','akkam','nagaa','gammachuu','galatoomaa',
+    'maaloo','ykn','fi','garuu',
+    // question words
+    'maali','maalii','akkamitti','eessatti','eessa','yoom','yoomi',
+    'meeqa','hangam','eenyu','akkam','maaliif',
+    // topic words (beauty / training / institute)
+    'koorso','koorsoota','leenjii','barnoota','barnootaa',
+    'galmee','galmeessuu','galmeeffachuu',
+    'argama','argamtu','waraqaa','ragaa',
+    'kafaltii','mindaa','beenyaa',
+    'heeyyama','eeyyama','guyyaa','ji\'a',
+    // common verbs & connectors a user might type
+    'qabdu','qabduu','qabna','kennaa','kennituu','kennitu',
+    'fudhata','fudhachuu','danda\'a','dandaa\'a','dandeetii',
+    'gargaaruu','gargaarsi','barsiisaa','barsiisu',
+    'dhufuu','deemuu','jira','jiruu','hin','wajjin',
+    'yeroo','guutuu','xumura','xumuruu','itti',
+    // numbers / duration words
+    'sadii','jaha','torba','saddeet','sagal','kudhan',
+    'ji\'a','torban','guyyaa',
+  ];
+
+  if (oromoWords.some(w => lower.includes(w))) return 'om';
+  return 'en';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Static content — all three languages
+// ─────────────────────────────────────────────────────────────────────────────
+const WELCOME: Record<Lang, string> = {
+  en: `Hello! 👋 Welcome to Dare Beauty Training Institute.\n\nI'm your AI assistant. Ask me anything about our programs, admissions, attendance, certificates, or contact information.`,
+  om: `Baga nagaan dhuftan! 👋 Dare Beauty Training Institute.\n\nAni gargaaraa AI keessan. Koorsoota, galmee, argama, waraqaa ragaa, ykn qunnamtii ilaalchisee gaaffii kamiiyyuu na gaafadhaa.`,
+  am: `እንኳን ወደ Dare Beauty Training Institute በደህና መጡ! 👋\n\nእኔ የ AI ረዳትዎ ነኝ። ስለ ስልጠናዎቻችን፣ ምዝገባ፣ መገኘት፣ ሰርተፊኬት ወይም የመገናኛ መረጃ ማንኛውንም ጥያቄ ይጠይቁኝ።`,
+};
+
+const PRESETS: Record<Lang, string[]> = {
+  en: [
+    'What programs do you offer?',
+    'How long is the training?',
+    'How can I register?',
+    'Where are you located?',
+    'Do you provide certificates?',
+  ],
+  om: [
+    'Koorsoota maalii qabdu?',
+    'Leenjiin yeroo meeqa fudhata?',
+    "Akkamitti galmaa'uu danda'a?",
+    'Eessatti argamtu?',
+    'Waraqaa ragaa kennituu?',
+  ],
+  am: [
+    'ምን አይነት ስልጠና አላችሁ?',
+    'ስልጠናው ምን ያህል ጊዜ ይወስዳል?',
+    'እንዴት መመዝገብ እችላለሁ?',
+    'የት ነዎት የሚገኙት?',
+    'ሰርተፊኬት ይሰጣሉ?',
+  ],
+};
+
+const PLACEHOLDER: Record<Lang, string> = {
+  en: 'Ask about programs, admissions, location…',
+  om: 'Koorsoota, galmee, ykn argama gaafadhu…',
+  am: 'ስለ ስልጠና፣ ምዝገባ ወይም አድራሻ ይጠይቁ…',
+};
+
+// Friendly error messages — shown instead of raw API errors
+const ERROR_MSG: Record<Lang, string> = {
+  en: 'Sorry, I\'m having trouble responding right now. Please try again.',
+  om: 'Yeroo ammaa deebii kennuu irratti rakkoon uumameera. Maaloo irra deebi\'aa yaalaa.',
+  am: 'ይቅርታ፣ አሁን ምላሽ ለመስጠት ችግር አጋጥሞናል። እባክዎ እንደገና ይሞክሩ።',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper — make a welcome Message object
+// ─────────────────────────────────────────────────────────────────────────────
+function makeWelcome(lang: Lang): Message {
+  return {
     id: 'welcome-1',
     sender: 'assistant',
-    text: `Hi! I'm the Dare Institute AI Assistant.\n\nAsk me anything about our programs, admissions, fees, attendance, or certificates.`,
+    text: WELCOME[lang],
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   };
+}
 
-  const [messages, setMessages] = useState<Message[]>([welcomeMsg]);
+function now(): string {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────────
+export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({ userRole = 'guest' }) => {
+  const [isOpen,      setIsOpen]      = useState(false);
+  const [input,       setInput]       = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);   // true while SSE stream is open
+  const [streamingId, setStreamingId] = useState<string | null>(null); // id of bubble being written
+  const [unreadCount, setUnreadCount] = useState(1);
+  const [copiedId,    setCopiedId]    = useState<string | null>(null);
+  const [activeLang,  setActiveLang]  = useState<Lang>('en');
+
+  const [messages, setMessages] = useState<Message[]>([makeWelcome('en')]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // Ref to cancel any in-progress typing animation when a new message arrives
-  const typingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inputRef       = useRef<HTMLTextAreaElement>(null);
+  const abortRef       = useRef<AbortController | null>(null); // lets us cancel in-flight stream
+  // Token queue — filled by the SSE reader, drained at typing speed by an interval
+  const tokenQueueRef  = useRef<string[]>([]);
+  const typeTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimerRef.current) clearInterval(typingTimerRef.current);
-    };
+  // ── Typing speed constants ──────────────────────────────────────────────
+  const TYPING_DELAY = 18; // ms between each character reveal — adjust to taste
+
+  // ── Cleanup on unmount ──────────────────────────────────────────────────
+  useEffect(() => () => {
+    abortRef.current?.abort();
+    if (typeTimerRef.current) clearInterval(typeTimerRef.current);
   }, []);
 
-  // Persist chat history per session
+  // ── Restore persisted history ───────────────────────────────────────────
   useEffect(() => {
     try {
       const saved = localStorage.getItem('dare_chat_history');
@@ -61,101 +166,182 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({ userRole = 'gu
     } catch { /* ignore */ }
   }, []);
 
+  // ── Persist history on change ───────────────────────────────────────────
   useEffect(() => {
     try { localStorage.setItem('dare_chat_history', JSON.stringify(messages)); } catch { /* ignore */ }
   }, [messages]);
 
+  // ── Open: clear badge, focus input, scroll to bottom ───────────────────
   useEffect(() => {
     if (isOpen) {
       setUnreadCount(0);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
+      setTimeout(() => inputRef.current?.focus(), 80);
     }
-  }, [isOpen, messages]);
+  }, [isOpen]);
 
-  const processQuery = async (question: string) => {
-    // Cancel any previous typing animation still running
-    if (typingTimerRef.current) {
-      clearInterval(typingTimerRef.current);
-      typingTimerRef.current = null;
-    }
+  // ── Auto-scroll whenever messages change ───────────────────────────────
+  useEffect(() => {
+    if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isOpen]);
 
-    setIsLoading(true);
+
+  // ── Core: real Groq SSE stream + controlled typing speed ─────────────────
+  const processQuery = useCallback(async (question: string) => {
+    const lang = detectLang(question);
+    setActiveLang(lang);
+
+    // Cancel any previous in-flight stream and typing timer
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    if (typeTimerRef.current) { clearInterval(typeTimerRef.current); typeTimerRef.current = null; }
+    tokenQueueRef.current = [];
+
+    setIsStreaming(true);
 
     const history = messages
       .filter(m => m.id !== 'welcome-1')
       .map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text }));
 
-    try {
-      const res  = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: question, history, role: userRole }),
-      });
-      const data = await res.json();
+    // Empty bubble → shows bouncing dots immediately
+    const sid = `ai-${Date.now()}`;
+    setStreamingId(sid);
+    setMessages(prev => [...prev, { id: sid, sender: 'assistant', text: '', timestamp: now() }]);
 
-      setIsLoading(false);
+    // ── Typing drain: reveal one character from the queue every TYPING_DELAY ms
+    // streamDone flag lets the timer know when to stop after the queue empties
+    let streamDone = false;
 
-      const fullText: string = res.ok
-        ? (data.reply ?? '')
-        : `⚠️ ${data?.error ?? `Request failed (${res.status})`}`;
-
-      // Insert blank message then type into it character by character
-      const sid = `ai-${Date.now()}`;
-      setStreamingId(sid);
-      setMessages(prev => [...prev, {
-        id: sid,
-        sender: 'assistant',
-        text: '',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      }]);
-
-      // Reveal ~3 characters per tick at ~18ms — smooth and fast like ChatGPT
-      let index = 0;
-      const CHUNK = 2;
-      const DELAY = 30;
-
-      typingTimerRef.current = setInterval(() => {
-        index += CHUNK;
-        const visible = fullText.slice(0, index);
-
+    typeTimerRef.current = setInterval(() => {
+      const ch = tokenQueueRef.current.shift();
+      if (ch !== undefined) {
         setMessages(prev => prev.map(m =>
-          m.id === sid ? { ...m, text: visible } : m
+          m.id === sid ? { ...m, text: m.text + ch } : m
         ));
-
-        // Auto-scroll while typing
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      } else if (streamDone) {
+        // Queue empty and stream finished — we're done
+        clearInterval(typeTimerRef.current!);
+        typeTimerRef.current = null;
+        setIsStreaming(false);
+        setStreamingId(null);
+        if (!isOpen) setUnreadCount(n => n + 1);
+      }
+    }, TYPING_DELAY);
 
-        if (index >= fullText.length) {
-          clearInterval(typingTimerRef.current!);
-          typingTimerRef.current = null;
-          setStreamingId(null);
-          if (!isOpen) setUnreadCount(n => n + 1);
+    try {
+      const res = await fetch('/api/chat/stream', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ message: question, history, role: userRole, lang }),
+        signal : abortRef.current.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        let errMsg = ERROR_MSG[lang];
+        try { const d = await res.json(); if (d?.error) errMsg = d.error; } catch { /* ignore */ }
+        // Stop timer, show error immediately
+        clearInterval(typeTimerRef.current!); typeTimerRef.current = null;
+        tokenQueueRef.current = [];
+        setMessages(prev => prev.map(m => m.id === sid ? { ...m, text: `⚠️ ${errMsg}` } : m));
+        setIsStreaming(false); setStreamingId(null);
+        return;
+      }
+
+      // Read SSE stream — push every character of every token into the queue.
+      // The typing timer above drains it at a controlled pace.
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      let   buffer  = '';
+      let   hasError = false;
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() ?? '';
+
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith('data:')) continue;
+          const raw = line.slice(5).trim();
+          if (raw === '[DONE]') break;
+
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed.error) {
+              // Push error message into queue so it types in naturally too
+              clearInterval(typeTimerRef.current!); typeTimerRef.current = null;
+              tokenQueueRef.current = [];
+              setMessages(prev => prev.map(m =>
+                m.id === sid ? { ...m, text: `⚠️ ${ERROR_MSG[lang]}` } : m
+              ));
+              setIsStreaming(false); setStreamingId(null);
+              hasError = true;
+              break;
+            }
+            if (parsed.token) {
+              // Split token into individual characters and enqueue each one
+              for (const ch of parsed.token) {
+                tokenQueueRef.current.push(ch);
+              }
+            }
+          } catch { /* malformed chunk — skip */ }
         }
-      }, DELAY);
-    } catch {
-      setIsLoading(false);
-      setStreamingId(null);
-      setMessages(prev => [...prev, {
-        id: `err-${Date.now()}`,
-        sender: 'assistant',
-        text: '⚠️ Could not reach the AI service. Make sure the backend is running.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      }]);
-    }
-  };
+        if (hasError) break;
+      }
 
+      // Signal the drain timer that no more characters are coming
+      if (!hasError) streamDone = true;
+
+    } catch (err: unknown) {
+      if ((err as { name?: string })?.name === 'AbortError') {
+        clearInterval(typeTimerRef.current!); typeTimerRef.current = null;
+        return;
+      }
+      clearInterval(typeTimerRef.current!); typeTimerRef.current = null;
+      tokenQueueRef.current = [];
+      setMessages(prev => prev.map(m =>
+        m.id === sid ? { ...m, text: `⚠️ ${ERROR_MSG[lang]}` } : m
+      ));
+      setIsStreaming(false); setStreamingId(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, userRole, isOpen]);
+
+
+  // ── Send handler ────────────────────────────────────────────────────────
   const handleSend = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!input.trim() || isLoading) return;
     const text = input.trim();
+    if (!text || isStreaming) return;
+    // Add user bubble
     setMessages(prev => [...prev, {
-      id: `usr-${Date.now()}`,
-      sender: 'user',
-      text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      id: `usr-${Date.now()}`, sender: 'user', text, timestamp: now(),
     }]);
     setInput('');
+    // Reset textarea height
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
     processQuery(text);
+  };
+
+  // Enter → send  |  Shift+Enter → newline
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  };
+
+  // Preset chip: send directly without touching the input field
+  const handlePreset = (q: string) => {
+    if (isStreaming) return;
+    setMessages(prev => [...prev, {
+      id: `usr-${Date.now()}`, sender: 'user', text: q, timestamp: now(),
+    }]);
+    processQuery(q);
   };
 
   const handleCopy = (id: string, text: string) => {
@@ -165,14 +351,31 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({ userRole = 'gu
   };
 
   const handleClear = () => {
-    setMessages([welcomeMsg]);
+    abortRef.current?.abort();
+    if (typeTimerRef.current) { clearInterval(typeTimerRef.current); typeTimerRef.current = null; }
+    tokenQueueRef.current = [];
+    setIsStreaming(false);
+    setStreamingId(null);
+    setActiveLang('en');
+    setMessages([makeWelcome('en')]);
     try { localStorage.removeItem('dare_chat_history'); } catch { /* ignore */ }
   };
 
+  // ── Derived ─────────────────────────────────────────────────────────────
+  const presets     = PRESETS[activeLang];
+  const placeholder = PLACEHOLDER[activeLang];
+  const isBusy      = isStreaming;
+  // The streaming bubble has text only once tokens arrive; before that dots show
+  const streamingBubbleEmpty = streamingId
+    ? (messages.find(m => m.id === streamingId)?.text ?? '') === ''
+    : false;
+
+
+  // ── Render ──────────────────────────────────────────────────────────────
   return (
     <div className="fixed bottom-6 right-6 z-[9999] font-sans">
 
-      {/* ── Floating trigger button ── */}
+      {/* ── FAB trigger button ── */}
       <motion.button
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
@@ -186,7 +389,7 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({ userRole = 'gu
       >
         <AnimatePresence mode="wait">
           {isOpen
-            ? <motion.div key="x"  initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}><X className="w-6 h-6" /></motion.div>
+            ? <motion.div key="x"  initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate:  90, opacity: 0 }} transition={{ duration: 0.18 }}><X className="w-6 h-6" /></motion.div>
             : <motion.div key="sp" initial={{ rotate:  90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.18 }}><Sparkles className="w-6 h-6 fill-current" /></motion.div>
           }
         </AnimatePresence>
@@ -203,11 +406,11 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({ userRole = 'gu
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 18, scale: 0.93 }}
-            animate={{ opacity: 1, y: 0,  scale: 1    }}
-            exit={{   opacity: 0, y: 18, scale: 0.93 }}
-            transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-            className="absolute bottom-[72px] right-0 w-[calc(100vw-2rem)] sm:w-[400px] h-[540px] max-h-[80vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-[var(--border-default)] bg-[var(--bg-surface)]"
+            initial={{ opacity: 0, y: 20, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0,  scale: 1     }}
+            exit={{   opacity: 0, y: 20, scale: 0.92  }}
+            transition={{ type: 'spring', damping: 28, stiffness: 340 }}
+            className="absolute bottom-[72px] right-0 w-[calc(100vw-2rem)] sm:w-[420px] h-[580px] max-h-[88vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-[var(--border-default)] bg-[var(--bg-surface)]"
           >
             {/* Header */}
             <div className="px-4 py-3 bg-[var(--bg-base)] border-b border-[#E9C349]/25 flex items-center justify-between shrink-0">
@@ -215,13 +418,17 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({ userRole = 'gu
                 <img
                   src="/images/dareLogo.jpeg"
                   alt="Dare Institute Logo"
-                  className="w-8 h-8 rounded-full object-cover border border-[#E9C349]/40 shadow shrink-0"
+                  className="w-9 h-9 rounded-full object-cover border-2 border-[#E9C349]/50 shadow shrink-0"
                 />
                 <div>
-                  <h3 className="text-sm font-bold font-serif text-white leading-tight">Dare AI Assistant</h3>
-                  <p className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                    Online
+                  <h3 className="text-sm font-bold font-serif leading-tight" style={{ color: 'var(--text-primary)' }}>
+                    Dare AI Assistant
+                  </h3>
+                  <p className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                    {isBusy
+                      ? <><span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />Typing…</>
+                      : <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />Online</>
+                    }
                   </p>
                 </div>
               </div>
@@ -237,12 +444,19 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({ userRole = 'gu
               </div>
             </div>
 
+
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 scroll-smooth">
               {messages.map(msg => (
-                <div key={msg.id} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className={`flex items-end gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}
+                >
                   {/* Avatar */}
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
                     msg.sender === 'user'
                       ? 'bg-[#E9C349] text-black'
                       : 'bg-[var(--bg-panel)] text-[#E9C349] border border-[#E9C349]/30'
@@ -251,79 +465,134 @@ export const AdminChatWidget: React.FC<AdminChatWidgetProps> = ({ userRole = 'gu
                   </div>
 
                   {/* Bubble */}
-                  <div className={`group max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
+                  <div className={`group relative max-w-[82%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed shadow-sm ${
                     msg.sender === 'user'
                       ? 'bg-[#E9C349] text-black font-medium rounded-br-sm'
                       : 'bg-[var(--bg-panel)] border border-[var(--border-default)] text-[var(--text-primary)] rounded-bl-sm'
                   }`}>
-                    <p className="whitespace-pre-line">
+                    <p className="whitespace-pre-line break-words">
                       {msg.text}
-                      {/* Blinking cursor while this message is being streamed */}
-                      {msg.id === streamingId && msg.text !== '' && (
-                        <span className="inline-block w-0.5 h-3.5 bg-[var(--text-primary)] ml-0.5 opacity-80 animate-pulse align-text-bottom" />
+                      {/* Blinking cursor on the active streaming bubble */}
+                      {msg.id === streamingId && !streamingBubbleEmpty && (
+                        <span className="inline-block w-[2px] h-[14px] bg-current ml-0.5 opacity-70 animate-pulse align-text-bottom rounded-full" />
                       )}
                     </p>
 
-                    <div className="mt-1.5 flex items-center justify-between gap-2 text-[9px] opacity-50">
+                    {/* Timestamp + copy */}
+                    <div className="mt-2 flex items-center justify-between gap-2 text-[10px] opacity-40 group-hover:opacity-70 transition-opacity">
                       <span>{msg.timestamp}</span>
-                      {msg.sender === 'assistant' && (
-                        <button onClick={() => handleCopy(msg.id, msg.text)}
-                          className="flex items-center gap-0.5 hover:opacity-100 transition-opacity">
+                      {msg.sender === 'assistant' && msg.text && !msg.text.startsWith('⚠️') && (
+                        <button
+                          onClick={() => handleCopy(msg.id, msg.text)}
+                          className="flex items-center gap-1 hover:opacity-100 transition-opacity"
+                        >
                           {copiedId === msg.id
-                            ? <><Check className="w-2.5 h-2.5 text-emerald-500" /><span>Copied</span></>
-                            : <><Copy className="w-2.5 h-2.5" /><span>Copy</span></>
+                            ? <><Check className="w-3 h-3 text-emerald-500" /><span>Copied</span></>
+                            : <><Copy className="w-3 h-3" /><span>Copy</span></>
                           }
                         </button>
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
 
-              {/* Typing indicator — shown only while waiting for first token */}
-              {streamingId && messages.find(m => m.id === streamingId)?.text === '' && (
-                <div className="flex items-end gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-[var(--bg-panel)] border border-[#E9C349]/30 text-[#E9C349] flex items-center justify-center shrink-0">
+              {/* Bouncing dots — only while waiting for the first token */}
+              {streamingBubbleEmpty && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-end gap-2"
+                >
+                  <div className="w-7 h-7 rounded-xl bg-[var(--bg-panel)] border border-[#E9C349]/30 text-[#E9C349] flex items-center justify-center shrink-0 shadow-sm">
                     <Bot className="w-3.5 h-3.5" />
                   </div>
-                  <div className="bg-[var(--bg-panel)] border border-[var(--border-default)] rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '120ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E9C349] animate-bounce" style={{ animationDelay: '240ms' }} />
+                  <div className="bg-[var(--bg-panel)] border border-[var(--border-default)] rounded-2xl rounded-bl-sm px-4 py-3.5 flex items-center gap-1.5">
+                    {[0, 120, 240].map(delay => (
+                      <span
+                        key={delay}
+                        className="w-2 h-2 rounded-full bg-[#E9C349] animate-bounce"
+                        style={{ animationDelay: `${delay}ms` }}
+                      />
+                    ))}
                   </div>
-                </div>
+                </motion.div>
               )}
+
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Preset prompts */}
-            <div className="px-3 pt-2 pb-1.5 border-t border-[var(--border-subtle)] bg-[var(--bg-base)] shrink-0">
-              <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-                {PRESET_QUESTIONS.map((q, i) => (
-                  <button key={i} onClick={() => setInput(q)}
-                    className="whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-medium bg-[var(--bg-panel)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[#E9C349]/50 hover:text-[#D4AF37] transition-all shrink-0">
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            {/* Input */}
-            <form onSubmit={handleSend}
-              className="p-3 bg-[var(--bg-surface)] border-t border-[var(--border-default)] flex items-center gap-2 shrink-0">
-              <input
-                type="text"
+            {/* ── Preset chips — language-aware, hidden once conversation starts ── */}
+            {messages.length <= 1 && (
+              <div className="px-3 pt-1.5 pb-2 border-t border-[var(--border-subtle)] bg-[var(--bg-base)] shrink-0">
+                <p className="text-[10px] text-[var(--text-muted)] mb-1.5 px-0.5">Suggested questions</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {presets.map((q, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handlePreset(q)}
+                      disabled={isBusy}
+                      className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-[var(--bg-panel)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[#E9C349]/60 hover:text-[#D4AF37] hover:bg-[#E9C349]/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Scrollable quick-access chips during conversation ── */}
+            {messages.length > 1 && (
+              <div className="px-3 pt-2 pb-1.5 border-t border-[var(--border-subtle)] bg-[var(--bg-base)] shrink-0">
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                  {presets.map((q, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handlePreset(q)}
+                      disabled={isBusy}
+                      className="whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-medium bg-[var(--bg-panel)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[#E9C349]/60 hover:text-[#D4AF37] hover:bg-[#E9C349]/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Input area ── */}
+            <form
+              onSubmit={handleSend}
+              className="p-3 bg-[var(--bg-surface)] border-t border-[var(--border-default)] flex items-end gap-2 shrink-0"
+            >
+              <textarea
+                ref={inputRef}
+                rows={1}
                 value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Ask about programs, fees, admissions…"
-                className="flex-1 text-xs px-3.5 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[#E9C349] text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none transition-all"
+                onChange={e => {
+                  setInput(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px';
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder={placeholder}
+                disabled={isBusy}
+                className="flex-1 resize-none text-[13px] px-3.5 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[#E9C349] focus:ring-1 focus:ring-[#E9C349]/30 text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none transition-all leading-relaxed disabled:opacity-50"
+                style={{ minHeight: '40px', maxHeight: '100px', overflowY: 'auto' }}
               />
-              <button type="submit" disabled={!input.trim() || isLoading}
-                className="w-9 h-9 rounded-xl bg-[#E9C349] text-black hover:brightness-110 disabled:opacity-40 transition-all flex items-center justify-center shrink-0 shadow">
-                <Send className="w-4 h-4" />
+              <button
+                type="submit"
+                disabled={!input.trim() || isBusy}
+                aria-label="Send message"
+                className="w-10 h-10 rounded-xl bg-[#E9C349] text-black hover:brightness-110 active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed transition-all flex items-center justify-center shrink-0 shadow-md"
+              >
+                {isBusy
+                  ? <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  : <Send className="w-4 h-4" />
+                }
               </button>
             </form>
+
           </motion.div>
         )}
       </AnimatePresence>
