@@ -47,6 +47,7 @@ import {
 import { Language, ThemeMode, UserAccount } from '../../types';
 import { exportToCSV } from '../../utils/exportUtils';
 import { AttendanceHeatmap } from './AttendanceHeatmap';
+import { AttendanceSuccessModal } from '../modals/AttendanceSuccessModal';
 import { DashboardLangDropdown } from './DashboardLangDropdown';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -190,6 +191,37 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
   const [studentsList, setStudentsList] = useState(INITIAL_ASSIGNED_STUDENTS);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedShiftFilter, setSelectedShiftFilter] = useState('All');
+  
+  // Attendance Success Modal State
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+  const [attendanceStats, setAttendanceStats] = useState({
+    total: 0,
+    present: 0,
+    late: 0,
+    absent: 0,
+    excused: 0,
+  });
+
+  const handleSubmitFinalRollCall = () => {
+    let present = 0;
+    let late = 0;
+    let absent = 0;
+    studentsList.forEach(s => {
+      if (s.todayAttendance === 'Present') present++;
+      else if (s.todayAttendance === 'Late') late++;
+      else if (s.todayAttendance === 'Absent') absent++;
+      else present++;
+    });
+
+    setAttendanceStats({
+      total: studentsList.length,
+      present,
+      late,
+      absent,
+      excused: 0,
+    });
+    setIsAttendanceModalOpen(true);
+  };
   
   // ── Grade management state ────────────────────────────────────────────────────
   const [assessments, setAssessments] = useState<PracticalAssessment[]>(INITIAL_ASSESSMENTS);
@@ -787,8 +819,8 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
                     <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Daily Practical Lab Attendance Entry</h2>
                     <p className="text-xs text-[var(--text-secondary)]">Mark student attendance for Morning Lab Session • August 05, 2026.</p>
                   </div>
-                  <button onClick={() => alert('Attendance saved and synced to Registrar database!')} className="px-4 py-2 rounded-xl bg-emerald-600 text-[var(--text-primary)] font-bold text-xs hover:bg-emerald-500">
-                    Submit Final Roll Call
+                  <button onClick={handleSubmitFinalRollCall} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20">
+                    <UserCheck className="w-4 h-4" /> Submit Final Roll Call
                   </button>
                 </div>
 
@@ -1510,6 +1542,20 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
           );
         })()}
       </AnimatePresence>
+
+      {/* Attendance Submission Success Modal */}
+      <AttendanceSuccessModal
+        open={isAttendanceModalOpen}
+        onClose={() => setIsAttendanceModalOpen(false)}
+        dateStr={new Date().toDateString()}
+        totalStudents={attendanceStats.total}
+        presentCount={attendanceStats.present}
+        lateCount={attendanceStats.late}
+        absentCount={attendanceStats.absent}
+        excusedCount={attendanceStats.excused}
+        sessionName="Morning Practical Lab Session"
+        currentLang={currentLang}
+      />
     </div>
   );
 };
