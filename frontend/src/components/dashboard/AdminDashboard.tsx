@@ -96,7 +96,8 @@ type AdminTab =
   | 'users'
   | 'settings'
   | 'notifications'
-  | 'security';
+  | 'security'
+  | 'trash';
 
 // Comprehensive Initial State Datasets
 const INITIAL_STUDENTS = [
@@ -125,10 +126,10 @@ const INITIAL_PROGRAMS = [
 ];
 
 const INITIAL_INSTRUCTORS = [
-  { id: 'INS-101', name: 'Selamawit Abera', course: 'Hair Dressing & Styling', phone: '+251 91 777 8899', experience: '8 Years', rating: 4.9, activeStudents: 120, status: 'Active' },
-  { id: 'INS-102', name: 'Tigist Haile', course: 'Barbering & Grooming', phone: '+251 92 888 9900', experience: '6 Years', rating: 4.8, activeStudents: 95, status: 'Active' },
-  { id: 'INS-103', name: 'Marta Assefa', course: 'Makeup Artistry', phone: '+251 93 999 0011', experience: '10 Years', rating: 5.0, activeStudents: 85, status: 'Active' },
-  { id: 'INS-104', name: 'Frehiwot Zewde', course: 'Nail Care Technology', phone: '+251 94 000 1122', experience: '5 Years', rating: 4.7, activeStudents: 60, status: 'Active' }
+  { id: 'INS-101', name: 'Selamawit Abera', course: 'Hair Dressing & Styling', subjects: ['Hair Dressing'], phone: '+251 91 777 8899', experience: '8 Years', rating: 4.9, activeStudents: 120, status: 'Active' },
+  { id: 'INS-102', name: 'Tigist Haile', course: 'Barbering & Grooming', subjects: ['Barbering'], phone: '+251 92 888 9900', experience: '6 Years', rating: 4.8, activeStudents: 95, status: 'Active' },
+  { id: 'INS-103', name: 'Marta Assefa', course: 'Makeup Artistry', subjects: ['Makeup Artistry', 'Beauty Therapy'], phone: '+251 93 999 0011', experience: '10 Years', rating: 5.0, activeStudents: 85, status: 'Active' },
+  { id: 'INS-104', name: 'Frehiwot Zewde', course: 'Nail Care Technology', subjects: ['Nail Technology', 'Eyelash Training'], phone: '+251 94 000 1122', experience: '5 Years', rating: 4.7, activeStudents: 60, status: 'Active' }
 ];
 
 const INITIAL_CERTIFICATES = [
@@ -183,8 +184,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Modal / Action states
   const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
   const [addStudentModalOpen, setAddStudentModalOpen] = useState(false);
+  const [addInstructorModalOpen, setAddInstructorModalOpen] = useState(false);
   const [selectedTranscriptStudent, setSelectedTranscriptStudent] = useState<typeof INITIAL_STUDENTS[0] | null>(null);
   const [selectedCertPrint, setSelectedCertPrint] = useState<typeof INITIAL_CERTIFICATES[0] | null>(null);
+
+  // ── Trash bin ────────────────────────────────────────────────────────────
+  type TrashItem = {
+    id: string;
+    type: 'instructor' | 'student';
+    label: string;        // display name
+    meta: string;         // e.g. course / subjects
+    deletedAt: string;    // ISO timestamp
+    payload: unknown;     // full original object for restore
+  };
+  const [trashedItems, setTrashedItems] = useState<TrashItem[]>([]);
+
+  // ── Confirm-delete modal ─────────────────────────────────────────────────
+  type ConfirmTarget = { id: string; label: string; type: 'instructor' | 'student' };
+  const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null);
+
+  // ── Edit instructor modal ────────────────────────────────────────────────
+  type InstructorRecord = typeof INITIAL_INSTRUCTORS[0];
+  const [editInstructor, setEditInstructor] = useState<InstructorRecord | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '', phone: '', experience: '', subjects: [] as string[], status: 'Active',
+  });
+
+  // New Instructor Form State
+  const PROGRAM_OPTIONS = [
+    'Hair Dressing', 'Makeup Artistry', 'Nail Technology',
+    'Beauty Therapy', 'Barbering', 'Eyelash Training', 'Hair Wax Training',
+  ];
+  const [newInstructor, setNewInstructor] = useState({
+    name: '',
+    phone: '',
+    experience: '',
+    subjects: [] as string[],
+    status: 'Active',
+  });
 
   // New Student Form State
   const [newStudent, setNewStudent] = useState({
@@ -259,9 +296,96 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleDeleteStudent = (id: string) => {
-    if (confirm('Are you sure you want to delete this student record?')) {
-      setStudents(prev => prev.filter(s => s.id !== id));
+    const s = students.find(st => st.id === id);
+    if (!s) return;
+    setConfirmTarget({ id, type: 'student', label: s.name });
+  };
+
+  // Called when admin clicks "Yes, Delete" in the confirm modal
+  const handleConfirmDelete = () => {
+    if (!confirmTarget) return;
+    const { id, type } = confirmTarget;
+
+    // Special case: empty entire trash
+    if (id === '__all__') {
+      setTrashedItems([]);
+      setConfirmTarget(null);
+      return;
     }
+
+    if (type === 'student') {
+      const s = students.find(st => st.id === id);
+      if (s) {
+        setTrashedItems(prev => [{
+          id: `trash-${Date.now()}`,
+          type: 'student',
+          label: s.name,
+          meta: `${s.course} · ${s.duration}`,
+          deletedAt: new Date().toISOString(),
+          payload: s,
+        }, ...prev]);
+        setStudents(prev => prev.filter(st => st.id !== id));
+      }
+    }
+
+    if (type === 'instructor') {
+      const ins = instructors.find(i => i.id === id);
+      if (ins) {
+        setTrashedItems(prev => [{
+          id: `trash-${Date.now()}`,
+          type: 'instructor',
+          label: ins.name,
+          meta: (ins.subjects ?? [ins.course]).join(', '),
+          deletedAt: new Date().toISOString(),
+          payload: ins,
+        }, ...prev]);
+        setInstructors(prev => prev.filter(i => i.id !== id));
+      }
+    }
+
+    setConfirmTarget(null);
+  };
+
+  const handleEditInstructorSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editInstructor) return;
+    if (!editForm.name.trim() || !editForm.phone.trim()) return;
+    if (editForm.subjects.length === 0) {
+      alert('Please select at least one subject.');
+      return;
+    }
+    setInstructors(prev => prev.map(i =>
+      i.id === editInstructor.id
+        ? { ...i, ...editForm, course: editForm.subjects[0] }
+        : i
+    ));
+    setEditInstructor(null);
+  };
+
+  const handleAddInstructorSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newInstructor.name.trim() || !newInstructor.phone.trim()) return;
+    if (newInstructor.subjects.length === 0) {
+      alert('Please select at least one subject the instructor teaches.');
+      return;
+    }
+    const newId = `INS-${100 + instructors.length + 1}`;
+    setInstructors(prev => [
+      ...prev,
+      {
+        id: newId,
+        name: newInstructor.name.trim(),
+        course: newInstructor.subjects[0],           // primary course (legacy field)
+        subjects: newInstructor.subjects,
+        phone: newInstructor.phone.trim(),
+        experience: newInstructor.experience.trim() || '1 Year',
+        rating: 4.5,
+        activeStudents: 0,
+        status: newInstructor.status,
+      },
+    ]);
+    setAddInstructorModalOpen(false);
+    setNewInstructor({ name: '', phone: '', experience: '', subjects: [], status: 'Active' });
   };
 
   const handleGenerateCertificate = (student: typeof INITIAL_STUDENTS[0]) => {
@@ -279,8 +403,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setSelectedCertPrint(newCert);
   };
 
-  // Printable Transcript Generator Window
-  const printTranscript = (student: typeof INITIAL_STUDENTS[0]) => {
+  // Transcript modal — opens in-dashboard (same pattern as Certificate modal)
+  const openTranscript = (student: typeof INITIAL_STUDENTS[0]) => {
+    setSelectedTranscriptStudent(student);
+  };
+
+  // Print helper used inside the transcript modal
+  const printTranscriptModal = (student: typeof INITIAL_STUDENTS[0]) => {
     const win = window.open('', '_blank');
     if (!win) return;
     const html = `
@@ -326,7 +455,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </table>
           <div class="stamp">
             <div>Authorized Registrar Signature & Seal</div>
-            <div>Dare Beauty Institute • Addis Ababa, Ethiopia</div>
+            <div>Dare Beauty Institute • Tsara Tsion, Burayu, Sheger City</div>
           </div>
           <script>window.onload = function() { window.print(); }</script>
         </body>
@@ -622,6 +751,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span>Security Logs & Backup</span>
               </div>
               {isInstructor && <Lock className="w-3.5 h-3.5 text-amber-400" aria-label="Admin Only Page" />}
+            </button>
+
+            {/* ── Trash ── */}
+            <button
+              onClick={() => setActiveTab('trash')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
+                activeTab === 'trash'
+                  ? 'bg-red-500/20 text-red-400 shadow-md font-bold border border-red-500/30'
+                  : 'text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Trash2 className="w-4 h-4" />
+                <span>Trash / Deleted Items</span>
+              </div>
+              {trashedItems.length > 0 && (
+                <span className="font-mono text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">
+                  {trashedItems.length}
+                </span>
+              )}
             </button>
           </div>
 
@@ -992,7 +1141,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </td>
                         <td className="p-3.5 text-right space-x-2">
                           <button
-                            onClick={() => printTranscript(s)}
+                            onClick={() => openTranscript(s)}
                             className="px-2.5 py-1 rounded-lg bg-white/10 text-xs font-semibold hover:bg-white/20 text-[#E9C349]"
                             title="Generate Academic Transcript"
                           >
@@ -1107,26 +1256,123 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* TAB 5: INSTRUCTORS */}
           {activeTab === 'instructors' && (
             <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Instructor Faculty Roster</h2>
-                <p className="text-xs text-[var(--text-secondary)]">Assigned beauty professionals and master trainers.</p>
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Instructor Faculty Roster</h2>
+                  <p className="text-xs text-[var(--text-secondary)]">Assigned beauty professionals and master trainers.</p>
+                </div>
+                <button
+                  onClick={() => setAddInstructorModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-[#E9C349] text-black font-bold text-xs flex items-center space-x-1.5 hover:bg-[#F5D468] transition-all shadow"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Instructor</span>
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {instructors.map(ins => (
-                  <div key={ins.id} className="p-5 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] text-center space-y-3">
-                    <div className="w-14 h-14 rounded-2xl bg-[#E9C349] text-black font-bold flex items-center justify-center mx-auto text-xl font-serif">
-                      {ins.name.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-[var(--text-primary)]">{ins.name}</h3>
-                      <p className="text-xs text-[#E9C349] mt-0.5">{ins.course}</p>
-                    </div>
-                    <div className="text-[11px] text-[var(--text-secondary)] font-mono">
-                      <div>Experience: {ins.experience}</div>
-                      <div>Active Students: {ins.activeStudents}</div>
-                    </div>
+              {/* Stats bar */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)] text-center">
+                  <div className="text-2xl font-bold text-[#E9C349] font-mono">{instructors.length}</div>
+                  <div className="text-[10px] text-[var(--text-secondary)] uppercase font-mono mt-0.5">Total Instructors</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)] text-center">
+                  <div className="text-2xl font-bold text-emerald-400 font-mono">{instructors.filter(i => i.status === 'Active').length}</div>
+                  <div className="text-[10px] text-[var(--text-secondary)] uppercase font-mono mt-0.5">Active</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)] text-center">
+                  <div className="text-2xl font-bold text-[var(--text-primary)] font-mono">
+                    {instructors.reduce((s, i) => s + i.activeStudents, 0)}
                   </div>
+                  <div className="text-[10px] text-[var(--text-secondary)] uppercase font-mono mt-0.5">Total Students Taught</div>
+                </div>
+              </div>
+
+              {/* Instructor cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {instructors.map(ins => (
+                  <motion.div
+                    key={ins.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-5 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] hover:border-[#E9C349]/40 transition-all space-y-4"
+                  >
+                    {/* Avatar + status */}
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#E9C349] text-black font-bold flex items-center justify-center text-lg font-serif shadow">
+                        {ins.name.charAt(0)}
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ${
+                        ins.status === 'Active'
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-red-500/15 text-red-400 border border-red-500/30'
+                      }`}>
+                        {ins.status}
+                      </span>
+                    </div>
+
+                    {/* Name + ID */}
+                    <div>
+                      <h3 className="text-sm font-bold text-[var(--text-primary)] leading-tight">{ins.name}</h3>
+                      <p className="text-[10px] font-mono text-[var(--text-muted)] mt-0.5">{ins.id}</p>
+                    </div>
+
+                    {/* Subjects taught */}
+                    <div>
+                      <p className="text-[10px] font-mono text-[var(--text-muted)] uppercase mb-1.5">Teaches</p>
+                      <div className="flex flex-wrap gap-1">
+                        {(ins.subjects ?? [ins.course]).map((subj: string, si: number) => (
+                          <span key={si} className="px-2 py-0.5 rounded-full bg-[#E9C349]/15 text-[#D4AF37] text-[10px] font-bold border border-[#E9C349]/25">
+                            {subj}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Stats row */}
+                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-[var(--text-secondary)]">
+                      <div className="p-2 rounded-xl bg-black/20 text-center">
+                        <div className="font-bold text-[var(--text-primary)]">{ins.experience}</div>
+                        <div className="text-[9px] uppercase">Experience</div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-black/20 text-center">
+                        <div className="font-bold text-[var(--text-primary)]">{ins.activeStudents}</div>
+                        <div className="text-[9px] uppercase">Students</div>
+                      </div>
+                    </div>
+
+                    {/* Phone */}
+                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
+                      <Phone className="w-3 h-3 text-[#E9C349]" />
+                      <span className="font-mono">{ins.phone}</span>
+                    </div>
+
+                    {/* Edit + Delete buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setEditInstructor(ins);
+                          setEditForm({
+                            name: ins.name,
+                            phone: ins.phone,
+                            experience: ins.experience,
+                            subjects: ins.subjects ?? [ins.course],
+                            status: ins.status,
+                          });
+                        }}
+                        className="flex-1 py-1.5 rounded-xl bg-[#E9C349]/10 hover:bg-[#E9C349]/20 text-[#D4AF37] text-[11px] font-bold flex items-center justify-center gap-1 transition-all border border-[#E9C349]/20"
+                      >
+                        <Edit className="w-3 h-3" /> Edit
+                      </button>
+                      <button
+                        onClick={() => setConfirmTarget({ id: ins.id, type: 'instructor', label: ins.name })}
+                        className="flex-1 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
+                      >
+                        <Trash2 className="w-3 h-3" /> Remove
+                      </button>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -1175,7 +1421,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </td>
                         <td className="py-3 text-right">
                           <button
-                            onClick={() => printTranscript(s)}
+                            onClick={() => openTranscript(s)}
                             className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-[var(--text-primary)]"
                           >
                             Print Transcript
@@ -1377,6 +1623,123 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </div>
           )}
+
+          {/* TAB: TRASH / DELETED ITEMS */}
+          {activeTab === 'trash' && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
+                    <Trash2 className="w-5 h-5 text-red-400" />
+                    Trash
+                  </h2>
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Deleted items are kept here. Restore them or permanently remove them.
+                  </p>
+                </div>
+                {trashedItems.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setConfirmTarget({ id: '__all__', type: 'student', label: 'ALL items in Trash' });
+                    }}
+                    className="px-4 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 font-bold text-xs flex items-center gap-1.5 transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Empty Trash ({trashedItems.length})
+                  </button>
+                )}
+              </div>
+
+              {/* Empty state */}
+              {trashedItems.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center justify-center py-24 gap-4 text-center"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-[var(--border-default)] flex items-center justify-center">
+                    <Trash2 className="w-7 h-7 text-[var(--text-muted)]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[var(--text-primary)]">Trash is empty</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">Deleted instructors and students will appear here.</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Trash items list */}
+              {trashedItems.length > 0 && (
+                <div className="space-y-3">
+                  {trashedItems.map(item => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 8 }}
+                      className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)] hover:border-red-500/20 transition-all"
+                    >
+                      {/* Type badge + avatar */}
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm font-serif ${
+                        item.type === 'instructor'
+                          ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
+                          : 'bg-blue-500/15 text-blue-400 border border-blue-500/25'
+                      }`}>
+                        {item.label.charAt(0)}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-[var(--text-primary)] truncate">{item.label}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ${
+                            item.type === 'instructor'
+                              ? 'bg-amber-500/15 text-amber-400'
+                              : 'bg-blue-500/15 text-blue-400'
+                          }`}>
+                            {item.type === 'instructor' ? 'Instructor' : 'Student'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 truncate">{item.meta}</p>
+                        <p className="text-[10px] text-[var(--text-muted)] font-mono mt-0.5">
+                          Deleted: {new Date(item.deletedAt).toLocaleString()}
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {/* Restore */}
+                        <button
+                          onClick={() => {
+                            if (item.type === 'instructor') {
+                              setInstructors(prev => [...prev, item.payload as typeof INITIAL_INSTRUCTORS[0]]);
+                            } else {
+                              setStudents(prev => [...prev, item.payload as typeof INITIAL_STUDENTS[0]]);
+                            }
+                            setTrashedItems(prev => prev.filter(t => t.id !== item.id));
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/25 text-[11px] font-bold transition-all"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          Restore
+                        </button>
+
+                        {/* Permanent delete */}
+                        <button
+                          onClick={() => setTrashedItems(prev => prev.filter(t => t.id !== item.id))}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[11px] font-bold transition-all"
+                          title="Permanently delete — cannot be undone"
+                        >
+                          <X className="w-3 h-3" />
+                          Delete Forever
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
             </>
           )}
         </main>
@@ -1493,6 +1856,461 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM DELETE MODAL ── */}
+      <AnimatePresence>
+        {confirmTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 16, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 16, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 340 }}
+              className="bg-[var(--bg-panel)] border border-red-500/30 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5"
+            >
+              {/* Icon + title */}
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center">
+                  <AlertTriangle className="w-7 h-7 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[var(--text-primary)] font-serif">Are you sure?</h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
+                    You are about to remove{' '}
+                    <span className="font-bold text-[var(--text-primary)]">{confirmTarget.label}</span>{' '}
+                    from the {confirmTarget.type === 'instructor' ? 'instructor roster' : 'student list'}.
+                  </p>
+                  <p className="text-[10px] text-emerald-400 mt-2 flex items-center justify-center gap-1">
+                    <RefreshCw className="w-3 h-3" />
+                    This item will be moved to Trash and can be restored.
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-xs transition-all shadow"
+                >
+                  Yes, Delete
+                </button>
+                <button
+                  onClick={() => setConfirmTarget(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-[var(--text-primary)] font-semibold text-xs transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: Add New Instructor */}
+      {addInstructorModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-[var(--bg-panel)] border border-[#E9C349]/40 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl"
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#E9C349] text-black flex items-center justify-center">
+                  <UserCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold font-serif text-[var(--text-primary)]">Add New Instructor</h3>
+                  <p className="text-[10px] text-[var(--text-muted)]">Fill in the details and select what they teach</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setAddInstructorModalOpen(false);
+                  setNewInstructor({ name: '', phone: '', experience: '', subjects: [], status: 'Active' });
+                }}
+                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-white hover:bg-white/10 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddInstructorSubmit} className="space-y-4 text-xs">
+
+              {/* Full Name */}
+              <div>
+                <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">
+                  Full Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newInstructor.name}
+                  onChange={e => setNewInstructor({ ...newInstructor, name: e.target.value })}
+                  placeholder="e.g. Selamawit Abera"
+                  className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">
+                  Phone Number <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newInstructor.phone}
+                  onChange={e => setNewInstructor({ ...newInstructor, phone: e.target.value })}
+                  placeholder="+251 91 234 5678"
+                  className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                />
+              </div>
+
+              {/* Experience */}
+              <div>
+                <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">
+                  Years of Experience
+                </label>
+                <input
+                  type="text"
+                  value={newInstructor.experience}
+                  onChange={e => setNewInstructor({ ...newInstructor, experience: e.target.value })}
+                  placeholder="e.g. 5 Years"
+                  className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                />
+              </div>
+
+              {/* Subjects — checkbox grid */}
+              <div>
+                <label className="block text-[var(--text-secondary)] font-bold mb-2 uppercase tracking-wide text-[10px]">
+                  Subjects / Programs They Teach <span className="text-red-400">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PROGRAM_OPTIONS.map(prog => {
+                    const checked = newInstructor.subjects.includes(prog);
+                    return (
+                      <label
+                        key={prog}
+                        className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all select-none ${
+                          checked
+                            ? 'border-[#E9C349] bg-[#E9C349]/10 text-[#D4AF37] font-bold'
+                            : 'border-[var(--border-default)] bg-[var(--bg-input)] text-[var(--text-secondary)] hover:border-[#E9C349]/40'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="hidden"
+                          checked={checked}
+                          onChange={() => {
+                            setNewInstructor(prev => ({
+                              ...prev,
+                              subjects: checked
+                                ? prev.subjects.filter(s => s !== prog)
+                                : [...prev.subjects, prog],
+                            }));
+                          }}
+                        />
+                        <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                          checked ? 'bg-[#E9C349] border-[#E9C349]' : 'border-[var(--border-default)]'
+                        }`}>
+                          {checked && <Check className="w-2.5 h-2.5 text-black" />}
+                        </span>
+                        <span className="text-[11px] leading-tight">{prog}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {newInstructor.subjects.length === 0 && (
+                  <p className="text-[10px] text-amber-400 mt-1.5">Select at least one program.</p>
+                )}
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">
+                  Status
+                </label>
+                <select
+                  value={newInstructor.status}
+                  onChange={e => setNewInstructor({ ...newInstructor, status: e.target.value })}
+                  className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:bg-[#F5D468] transition-all"
+                >
+                  Add to Roster
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddInstructorModalOpen(false);
+                    setNewInstructor({ name: '', phone: '', experience: '', subjects: [], status: 'Active' });
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-[var(--text-primary)] font-semibold text-xs transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* MODAL: Edit Instructor */}
+      <AnimatePresence>
+        {editInstructor && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 16, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 16, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 340 }}
+              className="bg-[var(--bg-panel)] border border-[#E9C349]/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-[#E9C349]/20 border border-[#E9C349]/30 text-[#E9C349] flex items-center justify-center">
+                    <Edit className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold font-serif text-[var(--text-primary)]">Edit Instructor</h3>
+                    <p className="text-[10px] text-[var(--text-muted)] font-mono">{editInstructor.id}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setEditInstructor(null)}
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditInstructorSave} className="space-y-4 text-xs">
+                {/* Name */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">Full Name <span className="text-red-400">*</span></label>
+                  <input
+                    type="text" required
+                    value={editForm.name}
+                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                  />
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">Phone <span className="text-red-400">*</span></label>
+                  <input
+                    type="text" required
+                    value={editForm.phone}
+                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                  />
+                </div>
+
+                {/* Experience */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">Years of Experience</label>
+                  <input
+                    type="text"
+                    value={editForm.experience}
+                    onChange={e => setEditForm({ ...editForm, experience: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                  />
+                </div>
+
+                {/* Subjects */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-bold mb-2 uppercase tracking-wide text-[10px]">
+                    Subjects / Programs <span className="text-red-400">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PROGRAM_OPTIONS.map(prog => {
+                      const checked = editForm.subjects.includes(prog);
+                      return (
+                        <label
+                          key={prog}
+                          className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all select-none ${
+                            checked
+                              ? 'border-[#E9C349] bg-[#E9C349]/10 text-[#D4AF37] font-bold'
+                              : 'border-[var(--border-default)] bg-[var(--bg-input)] text-[var(--text-secondary)] hover:border-[#E9C349]/40'
+                          }`}
+                        >
+                          <input type="checkbox" className="hidden" checked={checked}
+                            onChange={() => setEditForm(prev => ({
+                              ...prev,
+                              subjects: checked
+                                ? prev.subjects.filter(s => s !== prog)
+                                : [...prev.subjects, prog],
+                            }))}
+                          />
+                          <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${checked ? 'bg-[#E9C349] border-[#E9C349]' : 'border-[var(--border-default)]'}`}>
+                            {checked && <Check className="w-2.5 h-2.5 text-black" />}
+                          </span>
+                          <span className="text-[11px] leading-tight">{prog}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {editForm.subjects.length === 0 && (
+                    <p className="text-[10px] text-amber-400 mt-1.5">Select at least one program.</p>
+                  )}
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">Status</label>
+                  <select
+                    value={editForm.status}
+                    onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-1">
+                  <button type="submit"
+                    className="flex-1 py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:bg-[#F5D468] transition-all"
+                  >
+                    Save Changes
+                  </button>
+                  <button type="button" onClick={() => setEditInstructor(null)}
+                    className="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-[var(--text-primary)] font-semibold text-xs transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: Transcript Viewer */}
+      {selectedTranscriptStudent && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#FAF8F5] text-black border-4 border-[#D4AF37] rounded-3xl p-8 max-w-2xl w-full shadow-2xl relative font-serif overflow-y-auto max-h-[90vh]">
+
+            {/* Close */}
+            <button
+              onClick={() => setSelectedTranscriptStudent(null)}
+              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-black transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="text-center border-b-2 border-[#D4AF37] pb-5 mb-6">
+              <div className="text-xs font-sans font-bold text-[#D4AF37] tracking-widest uppercase mb-1">
+                Official Document
+              </div>
+              <h2 className="text-2xl font-bold text-black">
+                DARE WOMEN'S & MEN'S BEAUTY INSTITUTE
+              </h2>
+              <p className="text-xs text-gray-500 font-sans mt-1">
+                Tsara Tsion, Burayu, Sheger City, Oromia, Ethiopia
+              </p>
+              <p className="text-sm font-bold text-[#997510] tracking-widest uppercase mt-2">
+                Academic Transcript & Practical Assessment Report
+              </p>
+            </div>
+
+            {/* Student Meta */}
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm font-sans mb-6 bg-[#FFF8EE] border border-[#D4AF37]/30 rounded-2xl p-4">
+              <div><span className="text-gray-500 text-xs uppercase font-bold">Student ID:</span><br /><span className="font-mono font-bold text-black">{selectedTranscriptStudent.id}</span></div>
+              <div><span className="text-gray-500 text-xs uppercase font-bold">Full Name:</span><br /><span className="font-bold text-black">{selectedTranscriptStudent.name}</span></div>
+              <div><span className="text-gray-500 text-xs uppercase font-bold">Program:</span><br /><span className="font-bold text-black">{selectedTranscriptStudent.course}</span></div>
+              <div><span className="text-gray-500 text-xs uppercase font-bold">Duration:</span><br /><span className="font-bold text-black">{selectedTranscriptStudent.duration}</span></div>
+              <div>
+                <span className="text-gray-500 text-xs uppercase font-bold">Overall Attendance:</span><br />
+                <span className={`font-bold ${selectedTranscriptStudent.attendance >= 75 ? 'text-emerald-700' : 'text-red-600'}`}>
+                  {selectedTranscriptStudent.attendance}%
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500 text-xs uppercase font-bold">Competency Status:</span><br />
+                <span className="font-bold text-[#997510]">{selectedTranscriptStudent.competency}</span>
+              </div>
+            </div>
+
+            {/* Modules Table */}
+            <table className="w-full border-collapse font-sans text-sm mb-6">
+              <thead>
+                <tr className="bg-[#111]">
+                  <th className="p-2.5 text-left text-[#D4AF37] text-xs uppercase font-bold">Training Unit Module</th>
+                  <th className="p-2.5 text-left text-[#D4AF37] text-xs uppercase font-bold">Hours</th>
+                  <th className="p-2.5 text-left text-[#D4AF37] text-xs uppercase font-bold">Practical Score</th>
+                  <th className="p-2.5 text-left text-[#D4AF37] text-xs uppercase font-bold">Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { module: 'Safety, Sanitation & Hygiene Protocols',           hours: '40 Hours', score: '98%', grade: 'Highly Competent' },
+                  { module: 'Professional Hair Cutting & Blowdry Techniques',   hours: '80 Hours', score: '92%', grade: 'Competent' },
+                  { module: 'Chemical Processing, Dyeing & Weaving',            hours: '70 Hours', score: '95%', grade: 'Highly Competent' },
+                  { module: 'Client Care & Beauty Salon Ethics',                hours: '30 Hours', score: '96%', grade: 'Highly Competent' },
+                ].map((row, i) => (
+                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FDF8F0]'}>
+                    <td className="p-2.5 border-b border-gray-100 text-xs">{row.module}</td>
+                    <td className="p-2.5 border-b border-gray-100 text-xs font-mono">{row.hours}</td>
+                    <td className="p-2.5 border-b border-gray-100 text-xs font-mono font-bold text-emerald-700">{row.score}</td>
+                    <td className="p-2.5 border-b border-gray-100 text-xs font-bold text-[#997510]">{row.grade}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Signature stamp */}
+            <div className="text-right text-xs font-sans text-gray-500 border-t border-[#D4AF37]/30 pt-4 mb-6">
+              <p className="font-bold text-[#D4AF37]">Authorized Registrar Signature & Seal</p>
+              <p>Dare Beauty Institute • Tsara Tsion, Burayu, Sheger City</p>
+              <p className="font-mono text-gray-400 mt-1">Generated: {new Date().toLocaleDateString()}</p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-center gap-3 font-sans">
+              <button
+                onClick={() => printTranscriptModal(selectedTranscriptStudent)}
+                className="px-6 py-2.5 rounded-xl bg-[#D4AF37] text-black font-bold text-xs hover:bg-[#E9C349] flex items-center gap-2 transition-colors shadow"
+              >
+                <Printer className="w-4 h-4" />
+                Print Transcript
+              </button>
+              <button
+                onClick={() => setSelectedTranscriptStudent(null)}
+                className="px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 text-black font-bold text-xs transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

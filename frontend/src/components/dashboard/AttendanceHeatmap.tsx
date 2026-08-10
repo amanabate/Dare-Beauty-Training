@@ -8,6 +8,7 @@ import {
   ChevronDown, UserCheck, Users, Edit3
 } from 'lucide-react';
 import { Language, ThemeMode } from '../../types';
+import { AttendanceSuccessModal } from '../modals/AttendanceSuccessModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -434,6 +435,42 @@ export const AttendanceHeatmap: React.FC<AttendanceHeatmapProps> = ({
   // Local overrides for edited statuses (in-memory, mirrors what a real API would persist)
   const [overrides, setOverrides] =
     useState<Record<string, Record<string, AttendanceRecord['status']>>>({}); // { studentId: { dateStr: status } }
+
+  // Attendance Submission Modal State
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [submittedStats, setSubmittedStats] = useState({
+    total: 0,
+    present: 0,
+    late: 0,
+    absent: 0,
+    excused: 0,
+  });
+
+  const handleSubmitRollCall = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    let present = 0;
+    let late = 0;
+    let absent = 0;
+    let excused = 0;
+
+    MOCK_STUDENTS.forEach(s => {
+      const cur = overrides[s.studentId]?.[today] || s.records[today]?.status;
+      if (cur === 'present' || cur === 'excellent') present++;
+      else if (cur === 'late') late++;
+      else if (cur === 'excused') excused++;
+      else if (cur === 'absent') absent++;
+      else present++;
+    });
+
+    setSubmittedStats({
+      total: MOCK_STUDENTS.length,
+      present,
+      late,
+      absent,
+      excused,
+    });
+    setIsSuccessModalOpen(true);
+  };
 
   // Sync external selectedStudentId
   useEffect(() => {
@@ -986,8 +1023,8 @@ export const AttendanceHeatmap: React.FC<AttendanceHeatmapProps> = ({
               <p className="text-xs text-[var(--text-secondary)]">{new Date().toDateString()}</p>
             </div>
             <button
-              onClick={() => alert('Roll call submitted and synced to Registrar!')}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5"
+              onClick={handleSubmitRollCall}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
             >
               <UserCheck className="w-4 h-4" /> {t.submitRoll}
             </button>
@@ -1029,6 +1066,20 @@ export const AttendanceHeatmap: React.FC<AttendanceHeatmapProps> = ({
           </div>
         </div>
       )}
+
+      {/* Attendance Submission Success Modal */}
+      <AttendanceSuccessModal
+        open={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        dateStr={new Date().toDateString()}
+        totalStudents={submittedStats.total}
+        presentCount={submittedStats.present}
+        lateCount={submittedStats.late}
+        absentCount={submittedStats.absent}
+        excusedCount={submittedStats.excused}
+        sessionName={t.markToday}
+        currentLang={currentLang}
+      />
     </div>
   );
 };

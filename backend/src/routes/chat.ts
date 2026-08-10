@@ -18,135 +18,267 @@ function getGroq(): Groq {
 }
 
 // ── System prompt ────────────────────────────────────────────────────────────
-// Gives the model full context about Dare Beauty Training Institute so it can
-// answer any question about programs, admissions, attendance, certificates, etc.
-const SYSTEM_PROMPT = `You are the official AI assistant for Dare Women's & Men's Beauty Training Institute (ደሬ የሴቶች እና የወንዶች የውበት ሙያ ማሰልጠኛ ተቋም), a professional vocational beauty training institute in Addis Ababa, Ethiopia.
+const SYSTEM_PROMPT = `You are the official AI assistant for Dare Women's & Men's Beauty Training Institute.
+Your name is "Dare AI Assistant". You help students, prospective students, and visitors learn about the institute.
 
-INSTITUTE OVERVIEW:
-- Full name: Dare Women's & Men's Beauty Training Institute
-- Location: Addis Ababa, Ethiopia
-- Mission: Provide government-accredited practical vocational beauty education
-- Recognition: Government-recognized certificates, TVET (Technical and Vocational Education and Training) accredited
-- COC: Students prepare for the national COC (Certificate of Competence) practical examination
+═══════════════════════════════════════════
+INSTITUTE INFORMATION (use ONLY this data)
+═══════════════════════════════════════════
 
-TRAINING PROGRAMS OFFERED:
-1. Hair Dressing & Styling — 3 or 6 months | Covers cutting, blowdry, chemical processing, braiding, bridal styling
-2. Barbering & Men's Grooming — 3 or 6 months | Fading, shaving, beard sculpture, men's skincare
-3. Professional Makeup Artistry — 3 or 6 months | Day, evening, bridal, editorial, special effects makeup
-4. Nail Care Technology — 1 or 3 months | Gel, acrylic, nail art, extensions, pedicure spa
-5. Beauty Therapy & Skincare — 3 or 6 months | Facial treatments, body therapy, medical spa, waxing
-6. Eyelash Extension — 1 month | Classic, hybrid, volume, mega-volume lashes
-7. Hair Waxing & Body Treatments — 1 month | Full-body waxing, threading, depilation
+Full name   : Dare Women's & Men's Beauty Training Institute
+              (ደሬ የሴቶች እና የወንዶች የውበት ሙያ ማሰልጠኛ ተቋም — Amharic)
+              (Dhaabbata Leenjii Bareedina Dubartoota fi Dhiirota Dare — Afaan Oromo)
+Location    : Tsara Tsion, Burayu, Sheger City, Oromia, Ethiopia
+Phone       : 0911922359
 
-COURSE DURATION OPTIONS:
-- Short courses: 1 month (Lash Extension, Waxing)
-- Standard diplomas: 3 months
-- Advanced master diplomas: 6 months
-- Shifts available: Morning (8:30AM–12:30PM), Afternoon (1:30PM–5:30PM), Evening (5:30PM–8:30PM), Weekend
+───────────────────────────────────────────
+TRAINING PROGRAMS (with Afaan Oromo names)
+───────────────────────────────────────────
+1. Hair Dressing      (Afaan Oromo: Hojii Rifeensaa)         — ji'a 3 ykn ji'a 6
+2. Makeup Artistry    (Afaan Oromo: Makiyaajii)              — ji'a 3 ykn ji'a 6
+3. Nail Technology    (Afaan Oromo: Teeknoloojii Cinaacha)   — ji'a 3 ykn ji'a 6
+4. Beauty Therapy     (Afaan Oromo: Qorichaa Bareedina)      — ji'a 3 ykn ji'a 6
+5. Barbering          (Afaan Oromo: Hagamsaa / Barber)       — ji'a 3 ykn ji'a 6
+6. Eyelash Training   (Afaan Oromo: Leenjii Filfilaa Ija)    — ji'a 3 ykn ji'a 6
+7. Hair Wax Training  (Afaan Oromo: Leenjii Waxii Rifeensaa) — ji'a 3 ykn ji'a 6
 
-FEES & PAYMENT:
-- Tuition varies by program and duration (approx 8,000–15,000 ETB total)
-- Flexible installment payment plans available
-- Payment methods: Telebirr, CBE Birr, CBO Mobile Banking, bank transfer
-- COC examination fee is separate and paid to TVET authority
+All programs: 3 months (standard) or 6 months (advanced).
 
-ADMISSIONS & REGISTRATION:
-- Requirements: Copy of ID/Passport, 2 passport-size photos, grade 8 or 10 completion certificate
-- No prior beauty experience required
-- Online application available on the institute website
-- Walk-in registration also accepted at the campus
-- Enrollment happens on a rolling basis (no fixed semester start dates)
+───────────────────────────────────────────
+ADMISSIONS & REGISTRATION
+───────────────────────────────────────────
+- Online admission available through the institute portal.
+- Walk-in registration accepted at the campus.
+- No prior beauty experience required.
 
-ATTENDANCE & COC COMPLIANCE:
-- Minimum 75% attendance required to qualify for COC practical examination
-- Biometric check-in system used to record attendance
-- Students below 75% are flagged and given follow-up support
-- Attendance tracked as: Present, Late (within 30-min grace), Absent, Excused, Holiday
+───────────────────────────────────────────
+ATTENDANCE
+───────────────────────────────────────────
+- Attendance tracked through the institute's digital system.
+- Students can view attendance records through the student portal.
 
-CERTIFICATES & GRADUATION:
-- Government-recognized Vocational Qualification Certificate issued on completion
-- COC Certificate issued after passing the national practical examination
-- Certificates include QR verification code for authenticity
-- Recognized for employment both in Ethiopia and internationally
+───────────────────────────────────────────
+CERTIFICATES
+───────────────────────────────────────────
+- Official certificate issued on program completion.
+- Certificate verification available through the institute's system.
 
-STAFF & INSTRUCTORS:
-- All instructors are TVET-certified master trainers
-- Instructor: Selamawit Abera (Senior Hair Artistry Master, 8 years experience)
-- Studio space includes equipped practice salon, dummy heads, live models
+───────────────────────────────────────────
+CONTACT
+───────────────────────────────────────────
+- Phone: 0911922359
+- Location: Tsara Tsion, Burayu, Sheger City, Oromia, Ethiopia
 
-STUDENT PORTAL:
-- Students can access their attendance records, grades, and announcements via the portal
-- Admin dashboard allows managing enrollments, payments, grades, certificates
-- Instructor dashboard allows marking attendance, recording practical assessment scores
+═══════════════════════════════════════════
+STRICT RULES
+═══════════════════════════════════════════
 
-LANGUAGE SUPPORT:
-- Institute serves students in English, Amharic (አማርኛ), and Afaan Oromoo
-- Answer in the same language the user is writing in when possible
+1. NEVER INVENT information — no fees, schedules, instructor names, payment methods,
+   registration dates, or any detail not listed above.
+2. If information is unavailable, say so politely and refer to phone 0911922359.
+3. Stay focused on Dare Beauty only.
 
-TONE & BEHAVIOR:
-- Be helpful, professional, warm, and concise
-- If asked about specific student data you don't have, explain you can only access anonymised summary data
-- Do not make up specific student names or records unless they appear in the conversation context
-- For anything requiring a human decision (enrollment approval, payment confirmation), advise the user to contact the admin desk
-- Keep responses focused — bullet points for lists, plain paragraphs for explanations
-- If asked something unrelated to the institute, politely redirect to institute topics`;
+═══════════════════════════════════════════
+LANGUAGE RULES — CRITICAL
+═══════════════════════════════════════════
 
-// POST /api/chat — returns the full AI reply as JSON.
-// The typing animation is done client-side, so no SSE needed.
-// Body: { message: string; history?: { role, content }[]; role?: string }
+AFAAN OROMO (Latin script, e.g. "Koorsoota maalii qabdu?"):
+  → Reply ONLY in Afaan Oromo using Latin script.
+  → NEVER use Ethiopic/Fidel characters (like ሀ ለ ሐ etc.) in an Afaan Oromo reply.
+  → NEVER mix Amharic words into an Afaan Oromo reply.
+  → Afaan Oromo uses the Latin alphabet: a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+AMHARIC (Ethiopic script, e.g. "ምን አይነት ስልጠና አላችሁ?"):
+  → Reply ONLY in Amharic using Ethiopic script.
+  → NEVER use Latin script in an Amharic reply.
+
+ENGLISH:
+  → Reply in English.
+
+Switch language whenever the user switches.
+Do NOT mix scripts in one reply.
+
+═══════════════════════════════════════════
+CONVERSATION STYLE
+═══════════════════════════════════════════
+
+- Friendly, polite, helpful, concise.
+- Bullet points for lists.
+- Maintain conversation context.
+- Keep responses short and clear.
+`;
+
+// ── Afaan Oromo few-shot examples ────────────────────────────────────────────
+// Injected as real conversation turns when lang==='om'.
+// This teaches the model the exact pattern: Oromo question → Oromo answer in Latin script.
+const OROMO_FEW_SHOT: Groq.Chat.ChatCompletionMessageParam[] = [
+  {
+    role: 'user',
+    content: 'Koorsoota maalii qabdu?',
+  },
+  {
+    role: 'assistant',
+    content: `Dare Beauty Training Institute keessatti koorsoota armaan gadii ni argatta:
+
+• Hojii Rifeensaa — ji'a 3 ykn ji'a 6
+• Makiyaajii — ji'a 3 ykn ji'a 6
+• Teeknoloojii Cinaacha — ji'a 3 ykn ji'a 6
+• Qorichaa Bareedina — ji'a 3 ykn ji'a 6
+• Hagamsaa (Barber) — ji'a 3 ykn ji'a 6
+• Leenjii Filfilaa Ija — ji'a 3 ykn ji'a 6
+• Leenjii Waxii Rifeensaa — ji'a 3 ykn ji'a 6
+
+Koorsoo barbaaddu filadhuu galmaa'uu ni dandeessa!`,
+  },
+  {
+    role: 'user',
+    content: 'Eessatti argamtu?',
+  },
+  {
+    role: 'assistant',
+    content: `Dhaabbanni keenya Tsara Tsion, Burayu, Sheger City, Oromia, Ethiopia keessa argama.\n\nBu'uura dabalataa yoo barbaadde lakkoofsa bilbilaa 0911922359 irratti nu quunnamuu dandeessa.`,
+  },
+  {
+    role: 'user',
+    content: 'Waraqaa ragaa kennituu?',
+  },
+  {
+    role: 'assistant',
+    content: `Eeyyee! Barattoonni koorsoo fixan waraqaa ragaa mirkaneessaa dhaabbata Dare Beauty irraa ni argatu. Waraqaan ragaa kun sirna mirkaneessa dhaabbataa keessatti qulqulleeffamuu danda'a.`,
+  },
+];
+
+// ── Shared request validation ────────────────────────────────────────────────
+function parseBody(body: unknown): {
+  message: string;
+  history: { role: 'user' | 'assistant'; content: string }[];
+  role: string;
+  lang: string;
+} | { error: string } {
+  const b = body as { message?: unknown; history?: unknown; role?: unknown; lang?: unknown };
+  if (!b.message || typeof b.message !== 'string' || !b.message.trim()) {
+    return { error: 'Message is required.' };
+  }
+  if (b.message.trim().length > 2000) {
+    return { error: 'Message too long (max 2000 characters).' };
+  }
+  const history = Array.isArray(b.history)
+    ? (b.history as { role: 'user' | 'assistant'; content: string }[]).slice(-10)
+    : [];
+  const lang = typeof b.lang === 'string' && ['en','om','am'].includes(b.lang) ? b.lang : 'en';
+  return { message: b.message.trim(), history, role: typeof b.role === 'string' ? b.role : 'user', lang };
+}
+
+// Build a language-reinforcement prefix injected as the last user turn.
+function langPrefix(lang: string): string {
+  if (lang === 'om') return '[RESPOND ONLY IN AFAAN OROMO USING LATIN SCRIPT. DO NOT USE ETHIOPIC/AMHARIC CHARACTERS.]\n';
+  if (lang === 'am') return '[RESPOND ONLY IN AMHARIC USING ETHIOPIC SCRIPT.]\n';
+  return '';
+}
+
+function buildMessages(
+  message: string,
+  history: { role: 'user' | 'assistant'; content: string }[],
+  lang: string
+): Groq.Chat.ChatCompletionMessageParam[] {
+  const prefix = langPrefix(lang);
+
+  // For Afaan Oromo: inject few-shot examples before the real history.
+  // This gives the model a concrete pattern to match — far more reliable than
+  // instructions alone for a small model that conflates Oromo with Amharic.
+  const fewShot: Groq.Chat.ChatCompletionMessageParam[] =
+    lang === 'om' ? OROMO_FEW_SHOT : [];
+
+  return [
+    { role: 'system', content: SYSTEM_PROMPT },
+    ...fewShot,
+    ...history.map(h => ({ role: h.role, content: h.content })),
+    { role: 'user', content: prefix + message },
+  ];
+}
+
+// ── POST /api/chat — non-streaming fallback (returns full reply as JSON) ─────
+// Body   : { message: string; history?: { role, content }[]; role?: string }
 // Returns: { reply: string; model: string; latencyMs: number }
 router.post('/', async (req: Request, res: Response) => {
-  const start = Date.now();
+  const start  = Date.now();
+  const parsed = parseBody(req.body);
+  if ('error' in parsed) return res.status(400).json(parsed);
+
+  const { message, history } = parsed;
 
   try {
-    const { message, history = [], role = 'user' } = req.body as {
-      message: string;
-      history?: { role: 'user' | 'assistant'; content: string }[];
-      role?: string;
-    };
-
-    if (!message || typeof message !== 'string' || !message.trim()) {
-      return res.status(400).json({ error: 'Message is required.' });
-    }
-    if (message.trim().length > 2000) {
-      return res.status(400).json({ error: 'Message too long (max 2000 characters).' });
-    }
-
-    const messages: Groq.Chat.ChatCompletionMessageParam[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...history.slice(-10).map(h => ({
-        role: h.role as 'user' | 'assistant',
-        content: h.content,
-      })),
-      { role: 'user', content: message.trim() },
-    ];
-
     const completion = await getGroq().chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages,
-      max_tokens: 1024,
+      model      : 'llama-3.1-8b-instant',
+      messages   : buildMessages(message, history, parsed.lang),
+      max_tokens : 1024,
       temperature: 0.6,
-      top_p: 0.9,
+      top_p      : 0.9,
     });
 
     const reply = completion.choices[0]?.message?.content?.trim() ?? 'No response from AI.';
-
-    return res.json({
-      reply,
-      model: completion.model,
-      latencyMs: Date.now() - start,
-    });
+    return res.json({ reply, model: completion.model, latencyMs: Date.now() - start });
   } catch (err: unknown) {
-    console.error('[chat route]', err);
-    const msg = err instanceof Error ? err.message : 'Unexpected error.';
-
-    if (msg.includes('401') || msg.includes('invalid_api_key')) {
+    console.error('[chat /]', err);
+    const msg = err instanceof Error ? err.message : '';
+    if (msg.includes('401') || msg.includes('invalid_api_key'))
       return res.status(502).json({ error: 'AI service authentication failed. Check GROQ_API_KEY.' });
-    }
-    if (msg.includes('429') || msg.includes('rate_limit')) {
+    if (msg.includes('429') || msg.includes('rate_limit'))
       return res.status(429).json({ error: 'Rate limit reached. Please wait a moment and try again.' });
-    }
     return res.status(500).json({ error: 'Failed to get AI response. Please try again.' });
+  }
+});
+
+// ── POST /api/chat/stream — real Groq SSE streaming ──────────────────────────
+// Body   : { message: string; history?: { role, content }[]; role?: string }
+// Streams: text/event-stream
+//   data: {"token":"..."}\n\n   — one chunk per Groq delta
+//   data: [DONE]\n\n            — signals end of stream
+//   data: {"error":"..."}\n\n   — sent before closing on error
+router.post('/stream', async (req: Request, res: Response) => {
+  const parsed = parseBody(req.body);
+  if ('error' in parsed) return res.status(400).json(parsed);
+
+  const { message, history } = parsed;
+
+  // Set SSE headers before any data is sent
+  res.setHeader('Content-Type',  'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('X-Accel-Buffering', 'no'); // disable nginx buffering if present
+  res.flushHeaders();
+
+  // Helper — write one SSE event
+  const send = (data: string) => res.write(`data: ${data}\n\n`);
+
+  try {
+    const stream = await getGroq().chat.completions.create({
+      model      : 'llama-3.1-8b-instant',
+      messages   : buildMessages(message, history, parsed.lang),
+      max_tokens : 1024,
+      temperature: 0.6,
+      top_p      : 0.9,
+      stream     : true,           // ← real Groq streaming
+    });
+
+    for await (const chunk of stream) {
+      const token = chunk.choices[0]?.delta?.content;
+      if (token) send(JSON.stringify({ token }));
+    }
+
+    send('[DONE]');
+    res.end();
+  } catch (err: unknown) {
+    console.error('[chat /stream]', err);
+    const msg = err instanceof Error ? err.message : '';
+
+    let userMsg = 'Failed to get AI response. Please try again.';
+    if (msg.includes('401') || msg.includes('invalid_api_key'))
+      userMsg = 'AI service authentication failed. Check GROQ_API_KEY.';
+    else if (msg.includes('429') || msg.includes('rate_limit'))
+      userMsg = 'Rate limit reached. Please wait a moment and try again.';
+
+    send(JSON.stringify({ error: userMsg }));
+    res.end();
   }
 });
 
