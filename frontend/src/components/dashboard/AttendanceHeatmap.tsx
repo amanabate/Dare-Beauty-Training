@@ -131,6 +131,8 @@ function generateMockRecords(
   year = 2026,
 ): Record<string, AttendanceRecord> {
   const records: Record<string, AttendanceRecord> = {};
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   for (let month = 0; month < 12; month++) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     for (let day = 1; day <= daysInMonth; day++) {
@@ -138,6 +140,13 @@ function generateMockRecords(
       const dow = dateObj.getDay();
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+
+      // Only fill attendance records up to today; future dates are set to no_class
+      if (dateStr > todayStr) {
+        records[dateStr] = { date: dateStr, dayName, status: 'no_class', program: 'N/A', instructor: 'Upcoming Session' };
+        continue;
+      }
+
       if (dow === 0) {
         records[dateStr] = { date: dateStr, dayName, status: 'no_class', program: 'N/A', instructor: 'Institute Closed' };
         continue;
