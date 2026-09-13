@@ -68,6 +68,7 @@ import {
   ExpenseEntry,
   addMonths,
   calcFirstPaymentDue,
+  monthLabel,
 } from './FinanceDashboard';
 import { AttendanceHeatmap } from './AttendanceHeatmap';
 import { NotificationCenter } from './NotificationCenter';
@@ -249,65 +250,132 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // ── Finance Module State ──────────────────────────────────────────────────
   const [instructorArrangements, setInstructorArrangements] = useState<InstructorPaymentArrangement[]>([]);
-  const [instructorPaymentHistories, setInstructorPaymentHistories] = useState<Record<string, InstructorPaymentRecord[]>>({});
+  // All instructor payment records (Pending + Confirmed + Cancelled)
+  const [instructorPaymentRecords, setInstructorPaymentRecords] = useState<InstructorPaymentRecord[]>([]);
   const [studentMonthlyPayments, setStudentMonthlyPayments] = useState<StudentMonthlyPayment[]>([]);
+  // Income and expense ledgers — ONLY hold Confirmed entries
   const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>([]);
   const [expenseEntries, setExpenseEntries] = useState<ExpenseEntry[]>([]);
 
-  // Compute instructor payment schedules from arrangements + history
+  // Derive instructor payment schedules from arrangements + confirmed history
   const instructorPaymentSchedules: InstructorPaymentSchedule[] = instructorArrangements.map(arr => {
-    const history = instructorPaymentHistories[arr.instructorId] || [];
-    const lastPayment = history.length > 0 ? history[history.length - 1] : null;
-    // Next due = firstPaymentDueDate advanced by number of paid months
-    const nextDueDate = lastPayment
-      ? addMonths(lastPayment.paymentDate, 1)
+    const confirmedHistory = instructorPaymentRecords.filter(
+      r => r.instructorId === arr.instructorId && r.status === 'Confirmed'
+    );
+    const lastPaid = confirmedHistory.length > 0 ? confirmedHistory[confirmedHistory.length - 1] : null;
+    // Next due advances by 1 month from the last confirmed payment date
+    const nextDueDate = lastPaid
+      ? addMonths(lastPaid.paymentDate, 1)
       : arr.firstPaymentDueDate;
-    const today = new Date().toISOString().slice(0, 10);
-    const msPerDay = 1000 * 60 * 60 * 24;
-    const daysRemaining = Math.round((new Date(nextDueDate).setHours(0,0,0,0) - new Date(today).setHours(0,0,0,0)) / msPerDay);
+    const todayMs = new Date().setHours(0, 0, 0, 0);
+    const dueMs   = new Date(nextDueDate).setHours(0, 0, 0, 0);
+    const daysRemaining = Math.round((dueMs - todayMs) / 86_400_000);
     let status: InstructorPaymentSchedule['status'] = 'Upcoming';
-    if (daysRemaining < 0) status = 'Overdue';
+    if (daysRemaining < 0)       status = 'Overdue';
     else if (daysRemaining === 0) status = 'Due Today';
-    else status = 'Upcoming';
+    else if (daysRemaining <= 7)  status = 'Due Soon';
+    else                          status = 'Upcoming';
     return {
-      instructorId: arr.instructorId,
-      instructorName: arr.instructorName,
-      arrangement: arr,
+      instructorId:    arr.instructorId,
+      instructorName:  arr.instructorName,
+      arrangement:     arr,
       nextDueDate,
-      lastPaidDate: lastPayment?.paymentDate ?? null,
-      lastPaidAmount: lastPayment?.amount ?? null,
+      lastPaidDate:    lastPaid?.paymentDate ?? null,
+      lastPaidAmount:  lastPaid?.amount ?? null,
       status,
       daysRemaining,
-      history,
+      history: instructorPaymentRecords.filter(r => r.instructorId === arr.instructorId),
     };
   });
 
-  // Finance handlers
+  // ── Finance Handlers ──────────────────────────────────────────────────────
+
   const handleArrangementCreated = (arr: InstructorPaymentArrangement) => {
     setInstructorArrangements(prev => {
-      const exists = prev.findIndex(a => a.instructorId === arr.instructorId);
-      if (exists >= 0) {
-        const updated = [...prev];
-        updated[exists] = arr;
-        return updated;
-      }
+      const idx = prev.findIndex(a => a.instructorId === arr.instructorId);
+      if (idx >= 0) { const u = [...prev]; u[idx] = arr; return u; }
       return [...prev, arr];
     });
   };
 
-  const handlePayInstructor = (instructorId: string, record: InstructorPaymentRecord) => {
-    setInstructorPaymentHistories(prev => ({
-      ...prev,
-      [instructorId]: [...(prev[instructorId] || []), record],
-    }));
+  /** Step 1: Admin records the payment (status = Pending, NOT yet in expenses) */
+  const handleCreateInstructorPayment = (record: InstructorPaymentRecord) => {
+    setInstructorPaymentRecords(prev => [...prev, record]);
   };
 
-  const handleAddStudentPayment = (p: StudentMonthlyPayment) => {
+  /** Step 2: Admin confirms the transfer — marks Confirmed and logs to expenses */
+  const handleConfirmInstructorPayment = (recordId: string, confirmedBy: string) => {
+    const confirmedAt = new Date().toISOString();
+    setInstructorPaymentRecords(prev =>
+      prev.map(r => r.id === recordId ? { ...r, status: 'Confirmed' as const, confirmedAt, confirmedBy } : r)
+    );
+    // Log to confirmed expense ledger only now
+    const record = instructorPaymentRecords.find(r => r.id === recordId);
+    if (record) {
+      setExpenseEntries(prev => [...prev, {
+        id: `EXP-${Date.now()}`,
+        type: 'Instructor Payment' as const,
+        description: `Salary — ${record.instructorName} (${record.periodLabel})`,
+        amount: record.amount,
+        date: record.paymentDate,
+        method: record.method,
+        recipient: record.instructorName,
+        reference: record.reference,
+        relatedInstructorId: record.instructorId,
+        notes: record.notes,
+        status: 'Confirmed' as const,
+        confirmedAt,
+        confirmedBy,
+        sourceId: record.id,
+      }]);
+    }
+  };
+
+  const handleCancelInstructorPayment = (recordId: string) => {
+    setInstructorPaymentRecords(prev =>
+      prev.map(r => r.id === recordId ? { ...r, status: 'Cancelled' as const } : r)
+    );
+  };
+
+  const handleCreateStudentPayment = (p: StudentMonthlyPayment) => {
     setStudentMonthlyPayments(prev => [...prev, p]);
   };
 
-  const handleUpdateStudentPayment = (id: string, updates: Partial<StudentMonthlyPayment>) => {
-    setStudentMonthlyPayments(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  /** Admin approves student payment — marks Confirmed and logs to income */
+  const handleApproveStudentPayment = (
+    id: string, confirmedBy: string,
+    paymentDate: string, method: string, reference: string, notes: string,
+  ) => {
+    const confirmedAt = new Date().toISOString();
+    setStudentMonthlyPayments(prev => prev.map(p =>
+      p.id === id ? { ...p, status: 'Confirmed' as const, paymentDate, method, reference, notes, confirmedAt, confirmedBy } : p
+    ));
+    const pmt = studentMonthlyPayments.find(p => p.id === id);
+    if (pmt) {
+      setIncomeEntries(prev => [...prev, {
+        id: `INC-${Date.now()}`,
+        type: 'Student Monthly Payment' as const,
+        description: `Monthly fee — ${pmt.studentName} (${pmt.paymentMonth})`,
+        amount: pmt.monthlyAmount,
+        date: paymentDate,
+        method,
+        reference,
+        relatedPersonId: pmt.studentId,
+        relatedPersonName: pmt.studentName,
+        notes,
+        status: 'Confirmed' as const,
+        confirmedAt,
+        confirmedBy,
+        sourceId: id,
+      }]);
+    }
+  };
+
+  /** Admin rejects student payment — does NOT touch income ledger */
+  const handleRejectStudentPayment = (id: string, reason: string, confirmedBy: string) => {
+    setStudentMonthlyPayments(prev => prev.map(p =>
+      p.id === id ? { ...p, status: 'Rejected' as const, rejectionReason: reason, confirmedBy } : p
+    ));
   };
 
   const handleAddIncome = (e: IncomeEntry) => {
@@ -316,6 +384,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleAddExpense = (e: ExpenseEntry) => {
     setExpenseEntries(prev => [...prev, e]);
+  };
+
+  /**
+   * Called from Admissions tab when Admin approves an application.
+   * Logs the registration fee as confirmed income.
+   */
+  const logRegistrationFeeAsIncome = (
+    studentName: string, studentId: string,
+    programName: string, feeAmount: number,
+    approvedBy: string,
+  ) => {
+    if (feeAmount <= 0) return;
+    const now = new Date().toISOString();
+    setIncomeEntries(prev => [...prev, {
+      id: `INC-REG-${Date.now()}`,
+      type: 'Registration Fee' as const,
+      description: `Registration fee — ${studentName} (${programName})`,
+      amount: feeAmount,
+      date: now.slice(0, 10),
+      method: 'Telebirr',      // receipt was uploaded at application time
+      reference: studentId,
+      relatedPersonId: studentId,
+      relatedPersonName: studentName,
+      notes: 'Auto-logged on application approval',
+      status: 'Confirmed' as const,
+      confirmedAt: now,
+      confirmedBy: approvedBy,
+      sourceId: studentId,
+    }]);
   };
 
   // Search Filtered Lists
@@ -349,6 +446,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           regDate: new Date().toISOString().slice(0, 10)
         }
       ]);
+      // Log registration fee as confirmed income in Finance
+      const matchedProgram = programs.find(p => p.name === app.program);
+      const feeStr = matchedProgram?.fee ?? '0 ETB';
+      const feeAmount = parseInt(feeStr.replace(/[^0-9]/g, ''), 10) || 0;
+      logRegistrationFeeAsIncome(
+        app.name, newRegId, app.program, feeAmount,
+        currentUser?.fullName || 'Admin',
+      );
       alert(`Application approved! Student registered with ID: ${newRegId}`);
     }
   };
@@ -1582,15 +1687,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {activeTab === 'finance' && (
             <FinanceDashboard
               currentLang={currentLang}
+              currentUserName={currentUser?.fullName || 'Admin'}
               instructors={instructors}
               students={students}
               instructorArrangements={instructorArrangements}
-              onArrangementCreated={handleArrangementCreated}
               instructorPaymentSchedules={instructorPaymentSchedules}
-              onPayInstructor={handlePayInstructor}
+              instructorPaymentRecords={instructorPaymentRecords}
+              onCreateInstructorPayment={handleCreateInstructorPayment}
+              onConfirmInstructorPayment={handleConfirmInstructorPayment}
+              onCancelInstructorPayment={handleCancelInstructorPayment}
               studentMonthlyPayments={studentMonthlyPayments}
-              onAddStudentPayment={handleAddStudentPayment}
-              onUpdateStudentPayment={handleUpdateStudentPayment}
+              onCreateStudentPayment={handleCreateStudentPayment}
+              onApproveStudentPayment={handleApproveStudentPayment}
+              onRejectStudentPayment={handleRejectStudentPayment}
               incomeEntries={incomeEntries}
               onAddIncome={handleAddIncome}
               expenseEntries={expenseEntries}
