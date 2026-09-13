@@ -58,6 +58,17 @@ import {
 } from 'lucide-react';
 import { Language, ThemeMode, UserAccount } from '../../types';
 import { exportToCSV, generatePDFReport } from '../../utils/exportUtils';
+import {
+  FinanceDashboard,
+  InstructorPaymentArrangement,
+  InstructorPaymentRecord,
+  InstructorPaymentSchedule,
+  StudentMonthlyPayment,
+  IncomeEntry,
+  ExpenseEntry,
+  addMonths,
+  calcFirstPaymentDue,
+} from './FinanceDashboard';
 import { AttendanceHeatmap } from './AttendanceHeatmap';
 import { NotificationCenter } from './NotificationCenter';
 import { DashboardLangDropdown } from './DashboardLangDropdown';
@@ -90,13 +101,10 @@ type AdminTab =
   | 'grades'
   | 'certificates'
   | 'fees'
-  | 'reports'
   | 'analytics'
-  | 'cms'
-  | 'users'
   | 'settings'
   | 'notifications'
-  | 'security'
+  | 'finance'
   | 'trash';
 
 // Comprehensive Initial State Datasets
@@ -166,7 +174,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('All');
 
   // Role Protection Definitions
-  const ADMIN_ONLY_TABS: AdminTab[] = ['overview', 'admissions', 'fees', 'cms', 'users', 'security'];
+  const ADMIN_ONLY_TABS: AdminTab[] = ['overview', 'admissions', 'fees'];
   const isInstructor = currentUser?.role === 'Instructor';
   const isAdmin = currentUser?.role === 'Admin';
   const isUnauthenticated = !currentUser;
@@ -221,6 +229,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     experience: '',
     subjects: [] as string[],
     status: 'Active',
+    // Payment arrangement fields
+    paymentAmount: '',
+    paymentFrequency: 'Monthly' as 'Monthly',
+    paymentStartDate: new Date().toISOString().slice(0, 10),
+    firstPaymentDueDate: addMonths(new Date().toISOString().slice(0, 10), 1),
   });
 
   // New Student Form State
@@ -233,6 +246,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     email: '',
     balance: '2,500 ETB'
   });
+
+  // ── Finance Module State ──────────────────────────────────────────────────
+  const [instructorArrangements, setInstructorArrangements] = useState<InstructorPaymentArrangement[]>([]);
+  const [instructorPaymentHistories, setInstructorPaymentHistories] = useState<Record<string, InstructorPaymentRecord[]>>({});
+  const [studentMonthlyPayments, setStudentMonthlyPayments] = useState<StudentMonthlyPayment[]>([]);
+  const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>([]);
+  const [expenseEntries, setExpenseEntries] = useState<ExpenseEntry[]>([]);
+
+  // Compute instructor payment schedules from arrangements + history
+  const instructorPaymentSchedules: InstructorPaymentSchedule[] = instructorArrangements.map(arr => {
+    const history = instructorPaymentHistories[arr.instructorId] || [];
+    const lastPayment = history.length > 0 ? history[history.length - 1] : null;
+    // Next due = firstPaymentDueDate advanced by number of paid months
+    const nextDueDate = lastPayment
+      ? addMonths(lastPayment.paymentDate, 1)
+      : arr.firstPaymentDueDate;
+    const today = new Date().toISOString().slice(0, 10);
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const daysRemaining = Math.round((new Date(nextDueDate).setHours(0,0,0,0) - new Date(today).setHours(0,0,0,0)) / msPerDay);
+    let status: InstructorPaymentSchedule['status'] = 'Upcoming';
+    if (daysRemaining < 0) status = 'Overdue';
+    else if (daysRemaining === 0) status = 'Due Today';
+    else status = 'Upcoming';
+    return {
+      instructorId: arr.instructorId,
+      instructorName: arr.instructorName,
+      arrangement: arr,
+      nextDueDate,
+      lastPaidDate: lastPayment?.paymentDate ?? null,
+      lastPaidAmount: lastPayment?.amount ?? null,
+      status,
+      daysRemaining,
+      history,
+    };
+  });
+
+  // Finance handlers
+  const handleArrangementCreated = (arr: InstructorPaymentArrangement) => {
+    setInstructorArrangements(prev => {
+      const exists = prev.findIndex(a => a.instructorId === arr.instructorId);
+      if (exists >= 0) {
+        const updated = [...prev];
+        updated[exists] = arr;
+        return updated;
+      }
+      return [...prev, arr];
+    });
+  };
+
+  const handlePayInstructor = (instructorId: string, record: InstructorPaymentRecord) => {
+    setInstructorPaymentHistories(prev => ({
+      ...prev,
+      [instructorId]: [...(prev[instructorId] || []), record],
+    }));
+  };
+
+  const handleAddStudentPayment = (p: StudentMonthlyPayment) => {
+    setStudentMonthlyPayments(prev => [...prev, p]);
+  };
+
+  const handleUpdateStudentPayment = (id: string, updates: Partial<StudentMonthlyPayment>) => {
+    setStudentMonthlyPayments(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  };
+
+  const handleAddIncome = (e: IncomeEntry) => {
+    setIncomeEntries(prev => [...prev, e]);
+  };
+
+  const handleAddExpense = (e: ExpenseEntry) => {
+    setExpenseEntries(prev => [...prev, e]);
+  };
 
   // Search Filtered Lists
   const filteredStudents = students.filter(s => {
@@ -384,8 +468,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         status: newInstructor.status,
       },
     ]);
+    // Create payment arrangement if amount is provided
+    if (newInstructor.paymentAmount && parseFloat(newInstructor.paymentAmount) > 0) {
+      const startDate = newInstructor.paymentStartDate || new Date().toISOString().slice(0, 10);
+      const arr: InstructorPaymentArrangement = {
+        instructorId: newId,
+        instructorName: newInstructor.name.trim(),
+        paymentAmount: parseFloat(newInstructor.paymentAmount),
+        paymentFrequency: 'Monthly',
+        paymentStartDate: startDate,
+        firstPaymentDueDate: newInstructor.firstPaymentDueDate || calcFirstPaymentDue(startDate),
+      };
+      handleArrangementCreated(arr);
+    }
     setAddInstructorModalOpen(false);
-    setNewInstructor({ name: '', phone: '', experience: '', subjects: [], status: 'Active' });
+    setNewInstructor({
+      name: '', phone: '', experience: '', subjects: [], status: 'Active',
+      paymentAmount: '', paymentFrequency: 'Monthly',
+      paymentStartDate: new Date().toISOString().slice(0, 10),
+      firstPaymentDueDate: addMonths(new Date().toISOString().slice(0, 10), 1),
+    });
   };
 
   const handleGenerateCertificate = (student: typeof INITIAL_STUDENTS[0]) => {
@@ -681,8 +783,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <div className="pt-3 px-3 py-2 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest font-bold">
-              System & CMS
+              System
             </div>
+
+            <button
+              onClick={() => setActiveTab('finance')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
+                activeTab === 'finance'
+                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <DollarSign className="w-4 h-4" />
+                <span>Finance</span>
+              </div>
+              {instructorPaymentSchedules.some(s => s.status === 'Overdue' || s.status === 'Due Today') && (
+                <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+              )}
+            </button>
 
             <button
               onClick={() => setActiveTab('analytics')}
@@ -696,62 +815,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span>Institute Analytics</span>
             </button>
 
-            <button
-              onClick={() => setActiveTab('reports')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'reports'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span>Export Reports Center</span>
-            </button>
 
-            <button
-              onClick={() => setActiveTab('cms')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
-                activeTab === 'cms'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Globe className="w-4 h-4" />
-                <span>Website Content CMS</span>
-              </div>
-              {isInstructor && <Lock className="w-3.5 h-3.5 text-amber-400" aria-label="Admin Only Page" />}
-            </button>
 
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
-                activeTab === 'users'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <UserCog className="w-4 h-4" />
-                <span>User Accounts & Roles</span>
-              </div>
-              {isInstructor && <Lock className="w-3.5 h-3.5 text-amber-400" aria-label="Admin Only Page" />}
-            </button>
 
-            <button
-              onClick={() => setActiveTab('security')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
-                activeTab === 'security'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Lock className="w-4 h-4" />
-                <span>Security Logs & Backup</span>
-              </div>
-              {isInstructor && <Lock className="w-3.5 h-3.5 text-amber-400" aria-label="Admin Only Page" />}
-            </button>
 
             {/* ── Trash ── */}
             <button
@@ -900,7 +966,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <span>Certificates View</span>
                     </button>
                     <button
-                      onClick={() => setActiveTab('reports')}
+                      onClick={() => setActiveTab('analytics')}
                       className="p-2.5 rounded-xl bg-white/5 hover:bg-[#E9C349] hover:text-black border border-[var(--border-default)] text-gray-200 transition-all font-semibold flex items-center space-x-2"
                     >
                       <BarChart3 className="w-4 h-4 text-[#E9C349]" />
@@ -1512,6 +1578,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
+          {/* TAB: FINANCE */}
+          {activeTab === 'finance' && (
+            <FinanceDashboard
+              currentLang={currentLang}
+              instructors={instructors}
+              students={students}
+              instructorArrangements={instructorArrangements}
+              onArrangementCreated={handleArrangementCreated}
+              instructorPaymentSchedules={instructorPaymentSchedules}
+              onPayInstructor={handlePayInstructor}
+              studentMonthlyPayments={studentMonthlyPayments}
+              onAddStudentPayment={handleAddStudentPayment}
+              onUpdateStudentPayment={handleUpdateStudentPayment}
+              incomeEntries={incomeEntries}
+              onAddIncome={handleAddIncome}
+              expenseEntries={expenseEntries}
+              onAddExpense={handleAddExpense}
+            />
+          )}
+
           {/* ANALYTICS TAB */}
           {activeTab === 'analytics' && (
             <div className="space-y-2">
@@ -1525,104 +1611,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="-mx-6">
                 <AnalyticsSection currentLang={currentLang} />
               </div>
-            </div>
-          )}
 
-          {/* TAB 10: REPORTS */}
-          {activeTab === 'reports' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Institute Export & PDF Reports Manager</h2>
-                <p className="text-xs text-[var(--text-secondary)]">Export formatted CSV spreadsheets and printable PDF administrative summaries.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-3">
-                  <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
-                    <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
-                    <span>CSV Data Exporter</span>
-                  </h3>
-                  <p className="text-xs text-[var(--text-secondary)]">Export active student lists with UTF-8 BOM encoding for Excel.</p>
-                  <button
-                    onClick={() => exportToCSV('Dare_Institute_Full_Registry', ['Student ID', 'Name', 'Course', 'Status', 'Attendance', 'Balance'], students.map(s => [s.id, s.name, s.course, s.status, `${s.attendance}%`, s.balance]))}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-[var(--text-primary)] font-bold text-xs"
-                  >
-                    Download Full Student CSV
-                  </button>
+              {/* ── Export Tools ── */}
+              <div className="pt-4 border-t border-[var(--border-default)]">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-sm font-bold font-serif text-[var(--text-primary)]">Export & PDF Reports</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#E9C349]/15 text-[#E9C349] text-[10px] font-mono font-bold border border-[#E9C349]/30">Data Tools</span>
                 </div>
-
-                <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-3">
-                  <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
-                    <Printer className="w-5 h-5 text-[#E9C349]" />
-                    <span>PDF Statement Generator</span>
-                  </h3>
-                  <p className="text-xs text-[var(--text-secondary)]">Generate formatted official printable PDF administrative report.</p>
-                  <button
-                    onClick={() => generatePDFReport('Dare Institute Executive Summary', 'Official Student & Academic Standing Log', ['Student ID', 'Name', 'Course', 'Status', 'Attendance'], students.map(s => [s.id, s.name, s.course, s.status, `${s.attendance}%`]))}
-                    className="px-4 py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:bg-[#F5D468]"
-                  >
-                    Generate PDF Report
-                  </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-5 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-3">
+                    <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                      <span>CSV Data Exporter</span>
+                    </h3>
+                    <p className="text-xs text-[var(--text-secondary)]">Export active student lists with UTF-8 BOM encoding for Excel.</p>
+                    <button
+                      onClick={() => exportToCSV('Dare_Institute_Full_Registry', ['Student ID', 'Name', 'Course', 'Status', 'Attendance', 'Balance'], students.map(s => [s.id, s.name, s.course, s.status, `${s.attendance}%`, s.balance]))}
+                      className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 transition-all"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Download Full Student CSV
+                    </button>
+                  </div>
+                  <div className="p-5 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-3">
+                    <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+                      <Printer className="w-4 h-4 text-[#E9C349]" />
+                      <span>PDF Statement Generator</span>
+                    </h3>
+                    <p className="text-xs text-[var(--text-secondary)]">Generate formatted official printable PDF administrative report.</p>
+                    <button
+                      onClick={() => generatePDFReport('Dare Institute Executive Summary', 'Official Student & Academic Standing Log', ['Student ID', 'Name', 'Course', 'Status', 'Attendance'], students.map(s => [s.id, s.name, s.course, s.status, `${s.attendance}%`]))}
+                      className="px-4 py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:bg-[#F5D468] flex items-center gap-2 transition-all"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Generate PDF Report
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 11: CMS */}
-          {activeTab === 'cms' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Website Content Management System (CMS)</h2>
-                <p className="text-xs text-[var(--text-secondary)]">Manage FAQs, announcements, gallery images, and landing page content.</p>
-              </div>
 
-              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
-                <h3 className="text-sm font-bold text-[var(--text-primary)]">Manage Frequently Asked Questions (FAQs)</h3>
-                <div className="space-y-3">
-                  {faqs.map(faq => (
-                    <div key={faq.id} className="p-4 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)]">
-                      <div className="font-bold text-[var(--text-primary)] text-xs">{faq.question}</div>
-                      <div className="text-xs text-[var(--text-secondary)] mt-1">{faq.answer}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 12: USERS */}
-          {activeTab === 'users' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">User Accounts & Role Permissions</h2>
-                <p className="text-xs text-[var(--text-secondary)]">Manage administrative roles, instructors, registrars, and student accounts.</p>
-              </div>
-
-              <div className="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-default)] p-6">
-                <div className="text-xs text-[var(--text-secondary)]">
-                  Current logged in user: <strong className="text-[#E9C349]">{currentUser?.fullName || 'Super Admin'}</strong> ({currentUser?.role || 'Admin'})
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 13: SECURITY & LOGS */}
-          {activeTab === 'security' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Security Audit Trail & Prisma Database Backup</h2>
-                <p className="text-xs text-[var(--text-secondary)]">View access history and database status.</p>
-              </div>
-
-              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-3">
-                <div className="flex items-center space-x-2 text-emerald-400 font-mono text-xs font-bold">
-                  <Shield className="w-4 h-4" />
-                  <span>Prisma PostgreSQL Database Status: HEALTHY</span>
-                </div>
-                <p className="text-xs text-[var(--text-secondary)]">Encrypted multi-region backup configured.</p>
-              </div>
-            </div>
-          )}
 
           {/* TAB: TRASH / DELETED ITEMS */}
           {activeTab === 'trash' && (
@@ -1937,7 +1967,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 onClick={() => {
                   setAddInstructorModalOpen(false);
-                  setNewInstructor({ name: '', phone: '', experience: '', subjects: [], status: 'Active' });
+                  setNewInstructor({ name: '', phone: '', experience: '', subjects: [], status: 'Active', paymentAmount: '', paymentFrequency: 'Monthly', paymentStartDate: new Date().toISOString().slice(0, 10), firstPaymentDueDate: addMonths(new Date().toISOString().slice(0, 10), 1) });
                 }}
                 className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-white hover:bg-white/10 transition-all"
               >
@@ -2051,6 +2081,79 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </select>
               </div>
 
+              {/* ── Payment Arrangement ── */}
+              <div className="pt-2 border-t border-[var(--border-default)] space-y-3">
+                <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#E9C349]">
+                  Payment Arrangement
+                </div>
+
+                {/* Payment Amount */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">
+                    Payment Amount (ETB) <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newInstructor.paymentAmount}
+                    onChange={e => setNewInstructor({ ...newInstructor, paymentAmount: e.target.value })}
+                    placeholder="e.g. 8000"
+                    className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                  />
+                </div>
+
+                {/* Payment Frequency */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">
+                    Payment Frequency
+                  </label>
+                  <select
+                    value={newInstructor.paymentFrequency}
+                    disabled
+                    className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none opacity-70 cursor-not-allowed"
+                  >
+                    <option value="Monthly">Monthly</option>
+                  </select>
+                </div>
+
+                {/* Payment Start Date */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">
+                    Payment Start Date <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={newInstructor.paymentStartDate}
+                    onChange={e => {
+                      const start = e.target.value;
+                      setNewInstructor({
+                        ...newInstructor,
+                        paymentStartDate: start,
+                        firstPaymentDueDate: addMonths(start, 1),
+                      });
+                    }}
+                    className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                  />
+                </div>
+
+                {/* First Payment Due Date (auto-calculated, editable) */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-bold mb-1 uppercase tracking-wide text-[10px]">
+                    First Payment Due Date
+                    <span className="ml-1 text-[var(--text-muted)] normal-case">(auto-calculated)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={newInstructor.firstPaymentDueDate}
+                    onChange={e => setNewInstructor({ ...newInstructor, firstPaymentDueDate: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all"
+                  />
+                  <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                    Start date + 1 month. Each instructor gets their own independent cycle.
+                  </p>
+                </div>
+              </div>
+
               {/* Actions */}
               <div className="flex items-center gap-2 pt-1">
                 <button
@@ -2063,7 +2166,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   type="button"
                   onClick={() => {
                     setAddInstructorModalOpen(false);
-                    setNewInstructor({ name: '', phone: '', experience: '', subjects: [], status: 'Active' });
+                    setNewInstructor({ name: '', phone: '', experience: '', subjects: [], status: 'Active', paymentAmount: '', paymentFrequency: 'Monthly', paymentStartDate: new Date().toISOString().slice(0, 10), firstPaymentDueDate: addMonths(new Date().toISOString().slice(0, 10), 1) });
                   }}
                   className="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-[var(--text-primary)] font-semibold text-xs transition-all"
                 >
