@@ -23,7 +23,6 @@ const applicationSchema = z.object({
   programId: z.string().min(1, 'Please select a training program'),
   duration: z.string().min(1, 'Please select program duration'),
   gender: z.enum(['female', 'male', 'other']),
-  preferredShift: z.enum(['morning', 'afternoon', 'weekend']),
   educationLevel: z.string().min(1, 'Please select your education level'),
   message: z.string().optional()
 });
@@ -55,7 +54,6 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
       programId: defaultProgramId || 'hair-dressing',
       duration: '3 Months',
       gender: 'female',
-      preferredShift: 'morning',
       educationLevel: 'Grade 10 Complete',
       message: ''
     }
@@ -278,42 +276,6 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Preferred Shift */}
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#111111] dark:text-[#FFFFFF] mb-1">
-                      {currentLang === 'en' ? 'Preferred Training Shift *' : 'የሚመችዎ የስልጠና ሰዓት *'}
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <label className="p-2.5 bg-white dark:bg-[#222222] border border-[#D4AF37]/30 text-center block text-xs cursor-pointer hover:border-[#111111] dark:hover:border-[#D4AF37] text-[#111111] dark:text-[#FFFFFF]">
-                        <input
-                          type="radio"
-                          value="morning"
-                          {...register('preferredShift')}
-                          className="accent-[#111111] dark:accent-[#D4AF37] block mx-auto mb-1"
-                        />
-                        <span>{currentLang === 'en' ? 'Morning' : 'ጠዋት'}</span>
-                      </label>
-                      <label className="p-2.5 bg-white dark:bg-[#222222] border border-[#D4AF37]/30 text-center block text-xs cursor-pointer hover:border-[#111111] dark:hover:border-[#D4AF37] text-[#111111] dark:text-[#FFFFFF]">
-                        <input
-                          type="radio"
-                          value="afternoon"
-                          {...register('preferredShift')}
-                          className="accent-[#111111] dark:accent-[#D4AF37] block mx-auto mb-1"
-                        />
-                        <span>{currentLang === 'en' ? 'Afternoon' : 'ከሰዓት'}</span>
-                      </label>
-                      <label className="p-2.5 bg-white dark:bg-[#222222] border border-[#D4AF37]/30 text-center block text-xs cursor-pointer hover:border-[#111111] dark:hover:border-[#D4AF37] text-[#111111] dark:text-[#FFFFFF]">
-                        <input
-                          type="radio"
-                          value="weekend"
-                          {...register('preferredShift')}
-                          className="accent-[#111111] dark:accent-[#D4AF37] block mx-auto mb-1"
-                        />
-                        <span>{currentLang === 'en' ? 'Weekend' : 'ቅዳሜ/እሁድ'}</span>
-                      </label>
-                    </div>
-                  </div>
-
                   {/* Education Background */}
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#111111] dark:text-[#FFFFFF] mb-1">
@@ -375,7 +337,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
             </div>
 
             <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-              <p>📍 Campus: Bole Road, Near Olympia Light, Addis Ababa</p>
+              <p>📍 Campus: Shager, Burayu, Tsara Tsion</p>
               <p>📞 Admission Hotline: +251 911 23 45 67</p>
             </div>
 

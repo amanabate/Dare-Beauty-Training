@@ -9,7 +9,6 @@ import {
   CalendarCheck,
   Award,
   Bell,
-  HelpCircle,
   X,
   Plus,
   CheckCircle2,
@@ -72,8 +71,7 @@ type InstructorTab =
   | 'programs'
   | 'certification'
   | 'announcements'
-  | 'reports'
-  | 'support';
+  | 'reports';
 
 // Initial Mock Datasets for Instructor
 const INSTRUCTOR_DATA = {
@@ -564,17 +562,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
               <span>Performance Reports</span>
             </button>
 
-            <button
-              onClick={() => setActiveTab('support')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'support'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span>Admin Contact & Support</span>
-            </button>
           </div>
 
           <div className="pt-3 border-t border-[var(--border-default)] mt-4 space-y-2">
@@ -1303,37 +1290,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             </div>
           )}
 
-          {/* TAB 11: SUPPORT */}
-          {activeTab === 'support' && (
-            <div className="max-w-2xl mx-auto space-y-6">
-              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Faculty Support & Admin Desk</h2>
-                <p className="text-xs text-[var(--text-secondary)]">Need studio supplies, model booking assistance, or schedule adjustments?</p>
-
-                <div className="space-y-3 pt-2 text-xs">
-                  <div className="p-3.5 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-[var(--text-primary)]">Academic Registrar Office</div>
-                      <div className="text-[var(--text-secondary)] font-mono text-[11px]">registrar@darebeauty.edu.et • Ext. 201</div>
-                    </div>
-                    <button onClick={() => alert('Calling Registrar Desk...')} className="px-3 py-1.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs">
-                      Call Desk
-                    </button>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-[var(--text-primary)]">Salon Equipment & Products Store</div>
-                      <div className="text-[var(--text-secondary)] font-mono text-[11px]">store@darebeauty.edu.et • Ext. 104</div>
-                    </div>
-                    <button onClick={() => alert('Requesting salon supplies...')} className="px-3 py-1.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs">
-                      Request Supplies
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </main>
       </div>
 
