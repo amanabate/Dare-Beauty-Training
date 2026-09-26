@@ -52,6 +52,30 @@ export function HomeClient() {
     setApplyModalOpen(true);
   };
 
+  const handleApplicationSubmit = (application: any) => {
+    try {
+      console.log('💾 Saving application:', application);
+      // Get existing applications from localStorage
+      const existingApps = localStorage.getItem('dare_applications');
+      const apps = existingApps ? JSON.parse(existingApps) : [];
+      console.log('💾 Existing applications:', apps.length);
+      
+      // Add new application
+      apps.push(application);
+      console.log('💾 Total applications after adding:', apps.length);
+      
+      // Save back to localStorage
+      localStorage.setItem('dare_applications', JSON.stringify(apps));
+      console.log('✅ Application saved successfully!');
+      
+      // Verify it was saved
+      const verified = localStorage.getItem('dare_applications');
+      console.log('✅ Verification - localStorage now contains:', verified ? JSON.parse(verified).length : 0, 'applications');
+    } catch (error) {
+      console.error('❌ Failed to save application:', error);
+    }
+  };
+
   const handleSignOut = () => {
     setUser(null);
     try {
@@ -119,6 +143,7 @@ export function HomeClient() {
         onClose={() => { setApplyModalOpen(false); setSelectedProgramId(undefined); }}
         defaultProgramId={selectedProgramId}
         currentLang={currentLang}
+        onSubmitApplication={handleApplicationSubmit}
       />
       <ProgramDetailModal
         program={activeSyllabusProgram}

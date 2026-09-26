@@ -747,7 +747,7 @@ export const AttendanceHeatmap: React.FC<AttendanceHeatmapProps> = ({
                       {sMetrics.rate}%
                     </div>
                     <div className="text-[10px] text-[var(--text-muted)]">
-                      {Number(sMetrics.rate) >= 75 ? '✔ COC Eligible' : '⚠ Below 75%'}
+                      {Number(sMetrics.rate) >= 75 ? '✔ Good Standing' : '⚠ Below 75%'}
                     </div>
                   </div>
                 </div>

@@ -19,9 +19,9 @@ export const Hero: React.FC<HeroProps> = ({ currentLang, onOpenApply }) => {
         <img
           src="/images/dare_institute_hero_1785909254437.jpg"
           alt="Dare Beauty Training Institute Studio"
-          className="w-full h-full object-cover opacity-20 filter contrast-105"
+          className="w-full h-full object-cover opacity-45 filter contrast-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-base)]/90 via-[var(--bg-base)]/75 to-[var(--bg-base)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-base)]/70 via-[var(--bg-base)]/45 to-[var(--bg-base)]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -66,6 +66,7 @@ type InstructorTab =
   | 'profile'
   | 'schedule'
   | 'students'
+  | 'approved'
   | 'attendance'
   | 'grades'
   | 'programs'
@@ -111,7 +112,7 @@ const ASSESSMENT_UNITS = [
   'Scalp Treatment & Keratin Infusion',
   'Advanced Braid Artistry & Extensions',
   'Bridal & Special Occasion Styling',
-  'Mock COC Practical Examination',
+  'Practical Skills Final Assessment',
 ];
 
 type CompetencyLevel = 'Highly Competent' | 'Competent' | 'Developing Competence';
@@ -134,7 +135,7 @@ export const INITIAL_ASSESSMENTS: PracticalAssessment[] = [
   { id: 'asmnt-001-2', studentId: 'REG-2026-001', unit: 'Professional Hair Cutting & Blowdry Techniques',   date: '2026-07-24', score: 92, maxScore: 100, notes: 'Excellent blowdry finish. Scissor angle needs consistency.', gradedBy: 'Selamawit Abera' },
   // REG-2026-002 Tigist
   { id: 'asmnt-002-1', studentId: 'REG-2026-002', unit: 'Client Care & Beauty Salon Ethics',                date: '2026-07-12', score: 96, maxScore: 100, notes: 'Outstanding client consultation and professional manner.', gradedBy: 'Selamawit Abera' },
-  { id: 'asmnt-002-2', studentId: 'REG-2026-002', unit: 'Advanced Braid Artistry & Extensions',            date: '2026-07-28', score: 97, maxScore: 100, notes: 'Exceptional extension work. Highly recommended for COC.', gradedBy: 'Selamawit Abera' },
+  { id: 'asmnt-002-2', studentId: 'REG-2026-002', unit: 'Advanced Braid Artistry & Extensions',            date: '2026-07-28', score: 97, maxScore: 100, notes: 'Exceptional extension work. Highly competent student.', gradedBy: 'Selamawit Abera' },
   // REG-2026-003 Chala
   { id: 'asmnt-003-1', studentId: 'REG-2026-003', unit: 'Safety, Sanitation & Hygiene Protocols',           date: '2026-07-11', score: 68, maxScore: 100, notes: 'Needs improvement in tool sterilisation procedures.', gradedBy: 'Selamawit Abera' },
   { id: 'asmnt-003-2', studentId: 'REG-2026-003', unit: 'Chemical Processing, Dyeing & Weaving',           date: '2026-07-25', score: 72, maxScore: 100, notes: 'Timing errors in relaxer neutralisation. Retake recommended.', gradedBy: 'Selamawit Abera' },
@@ -143,7 +144,7 @@ export const INITIAL_ASSESSMENTS: PracticalAssessment[] = [
   { id: 'asmnt-004-2', studentId: 'REG-2026-004', unit: 'Scalp Treatment & Keratin Infusion',              date: '2026-07-30', score: 91, maxScore: 100, notes: 'Very thorough scalp analysis. Product application well-timed.', gradedBy: 'Selamawit Abera' },
   // REG-2026-005 Bethlehem
   { id: 'asmnt-005-1', studentId: 'REG-2026-005', unit: 'Bridal & Special Occasion Styling',               date: '2026-07-18', score: 99, maxScore: 100, notes: 'Near-perfect bridal updo. Model feedback was outstanding.', gradedBy: 'Selamawit Abera' },
-  { id: 'asmnt-005-2', studentId: 'REG-2026-005', unit: 'Mock COC Practical Examination',                  date: '2026-08-01', score: 97, maxScore: 100, notes: 'Passed COC mock with distinction. Highest in cohort.', gradedBy: 'Selamawit Abera' },
+  { id: 'asmnt-005-2', studentId: 'REG-2026-005', unit: 'Practical Skills Final Assessment',               date: '2026-08-01', score: 97, maxScore: 100, notes: 'Excellent overall practical performance. Highest in cohort.', gradedBy: 'Selamawit Abera' },
   // REG-2026-008 Dawit
   { id: 'asmnt-008-1', studentId: 'REG-2026-008', unit: 'Safety, Sanitation & Hygiene Protocols',           date: '2026-07-10', score: 65, maxScore: 100, notes: 'Missed disinfection steps. Needs supervised repeat.', gradedBy: 'Selamawit Abera' },
   { id: 'asmnt-008-2', studentId: 'REG-2026-008', unit: 'Chemical Processing, Dyeing & Weaving',           date: '2026-07-26', score: 70, maxScore: 100, notes: 'Product mixing ratio off. Additional lab session assigned.', gradedBy: 'Selamawit Abera' },
@@ -169,11 +170,11 @@ const WEEKLY_TIMETABLE = [
   { day: 'Tuesday', morning: 'Precision Hair Cutting Lab B', afternoon: 'Bridal Updo Styling (Studio A)', evening: 'Retake Assessments' },
   { day: 'Wednesday', morning: 'Traditional Ethiopian Braiding', afternoon: 'Client Diagnosis & Scalp Care', evening: 'Staff Academic Sync' },
   { day: 'Thursday', morning: 'Chemical Color Processing', afternoon: 'Live Model Evaluation Floor', evening: 'Lab Prep' },
-  { day: 'Friday', morning: 'Mock COC Practical Exam Prep', afternoon: 'Faculty Grading Session', evening: 'Weekend Class Prep' }
+  { day: 'Friday', morning: 'Practical Skills Assessment', afternoon: 'Faculty Grading Session', evening: 'Weekend Class Prep' }
 ];
 
 const ANNOUNCEMENTS_LIST = [
-  { id: 'ann-1', title: 'COC Assessment Practical Checklist Submission', date: 'August 04, 2026', body: 'All instructors must upload practical competency scores for 6-month candidates before Friday 5:00 PM.' },
+  { id: 'ann-1', title: 'Practical Assessment Score Submission', date: 'August 04, 2026', body: 'All instructors must upload practical competency scores for diploma candidates before Friday 5:00 PM.' },
   { id: 'ann-2', title: 'Faculty Development Workshop', date: 'August 01, 2026', body: 'Quarterly training on modern organic dye formulations and salon sanitation guidelines in Conference Room B.' }
 ];
 
@@ -189,6 +190,40 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
   const [studentsList, setStudentsList] = useState(INITIAL_ASSIGNED_STUDENTS);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedShiftFilter, setSelectedShiftFilter] = useState('All');
+  
+  // Load approved applications from localStorage
+  const [approvedApplications, setApprovedApplications] = React.useState<any[]>([]);
+  
+  React.useEffect(() => {
+    const loadApprovedApplications = () => {
+      try {
+        const savedApps = localStorage.getItem('dare_applications');
+        if (savedApps) {
+          const apps = JSON.parse(savedApps);
+          // Filter only approved applications that match instructor's courses
+          const approved = apps.filter((app: any) => 
+            app.status === 'Approved & Registered' &&
+            INSTRUCTOR_DATA.assignedCourses.some(course => app.program?.includes(course.split('(')[0].trim()))
+          );
+          setApprovedApplications(approved);
+          console.log('📋 Instructor - Loaded approved applications:', approved);
+        }
+      } catch (error) {
+        console.error('❌ Failed to load approved applications:', error);
+      }
+    };
+
+    loadApprovedApplications();
+
+    // Reload when window regains focus
+    const handleFocus = () => {
+      console.log('👀 Instructor window focused - checking for new approved applications');
+      loadApprovedApplications();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
   
   // Attendance Success Modal State
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
@@ -487,6 +522,21 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('approved')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
+                activeTab === 'approved'
+                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Approved Registrations</span>
+              {approvedApplications.length > 0 && (
+                <span className="ml-auto font-mono text-[10px] bg-emerald-500 text-black px-2 py-0.5 rounded-full font-bold">{approvedApplications.length}</span>
+              )}
+            </button>
+
+            <button
               onClick={() => setActiveTab('attendance')}
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'attendance'
@@ -520,18 +570,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             >
               <BookOpen className="w-4 h-4" />
               <span>Assigned Programs</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('certification')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'certification'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <Award className="w-4 h-4 text-amber-400" />
-              <span>COC Cert Recommendations</span>
             </button>
 
             <div className="pt-3 px-3 py-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest font-bold">
@@ -789,6 +827,96 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             </div>
           )}
 
+          {/* TAB 3.5: APPROVED REGISTRATIONS */}
+          {activeTab === 'approved' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Approved Course Registrations</h2>
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Students who have been approved for the courses you teach: {INSTRUCTOR_DATA.assignedCourses.join(' & ')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    try {
+                      const savedApps = localStorage.getItem('dare_applications');
+                      if (savedApps) {
+                        const apps = JSON.parse(savedApps);
+                        const approved = apps.filter((app: any) => 
+                          app.status === 'Approved & Registered' &&
+                          INSTRUCTOR_DATA.assignedCourses.some(course => app.program?.includes(course.split('(')[0].trim()))
+                        );
+                        setApprovedApplications(approved);
+                        alert(`Refreshed! Found ${approved.length} approved registration(s) for your courses.`);
+                      }
+                    } catch (error) {
+                      console.error('Refresh failed:', error);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#E9C349] text-black text-xs font-bold hover:brightness-110 transition-all"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Refresh List
+                </button>
+              </div>
+
+              {approvedApplications.length === 0 ? (
+                <div className="p-12 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-default)] flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-8 h-8 text-[var(--text-muted)]" />
+                  </div>
+                  <h3 className="text-base font-bold text-[var(--text-primary)] mb-2">No Approved Registrations Yet</h3>
+                  <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto">
+                    When admin approves applications for your courses ({INSTRUCTOR_DATA.assignedCourses.map(c => c.split('(')[0].trim()).join(', ')}), they will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {approvedApplications.map((app) => (
+                    <div key={app.id} className="p-5 rounded-3xl bg-[var(--bg-panel)] border border-emerald-500/30 hover:border-emerald-500/50 transition-all space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-mono text-[10px] text-[#E9C349] font-bold">{app.id}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Approved
+                          </span>
+                        </div>
+
+                        <h3 className="text-base font-bold text-[var(--text-primary)]">{app.name}</h3>
+                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">{app.phone} • {app.email}</p>
+
+                        <div className="mt-3 p-3 rounded-2xl bg-black/40 text-xs space-y-1 font-mono">
+                          <div><span className="text-[var(--text-muted)]">Program:</span> {app.program}</div>
+                          <div><span className="text-[var(--text-muted)]">Duration:</span> {app.duration}</div>
+                          <div><span className="text-[var(--text-muted)]">Shift:</span> {app.shift}</div>
+                          <div><span className="text-[var(--text-muted)]">Approved:</span> {app.date || 'Recently'}</div>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs">
+                        <span className="text-[var(--text-muted)]">
+                          <CheckCircle2 className="w-3.5 h-3.5 inline mr-1 text-emerald-400" />
+                          Ready for class
+                        </span>
+                        <button
+                          className="text-[#E9C349] hover:text-[#F5D468] font-semibold flex items-center gap-1"
+                          onClick={() => {
+                            alert(`${app.name} has been approved and registered. They will appear in your student roster once the admin assigns them to your class sessions.`);
+                          }}
+                        >
+                          <Users className="w-3.5 h-3.5" />
+                          Details
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* TAB 4: ATTENDANCE */}
           {activeTab === 'attendance' && (
             <div className="space-y-6">
@@ -1015,7 +1143,7 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
                       </div>
                       <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-mono">
                         <span>0%</span>
-                        <span className="text-amber-400">75% COC min</span>
+                        <span className="text-amber-400">75% required</span>
                         <span>100%</span>
                       </div>
                     </div>
@@ -1112,39 +1240,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
                   </div>
                 );
               })()}
-            </div>
-          )}
-
-          {/* TAB 6: CERTIFICATION RECOMMENDATION */}
-          {activeTab === 'certification' && (
-            <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">TVET COC Certification Endorsement</h2>
-                <p className="text-xs text-[var(--text-secondary)]">Select eligible candidate students for official Government COC Practical Assessment recommendation.</p>
-
-                <div className="divide-y divide-[var(--border-subtle)]">
-                  {studentsList.map(s => (
-                    <div key={s.id} className="py-3 flex items-center justify-between text-xs">
-                      <div>
-                        <div className="font-bold text-[var(--text-primary)]">{s.name} <span className="font-mono text-[#E9C349] text-[10px]">({s.id})</span></div>
-                        <div className="text-[10px] text-[var(--text-secondary)]">Attendance: {s.attendanceRate}% • Grade: {s.lastGrade}%</div>
-                      </div>
-
-                      <button
-                        onClick={() => toggleRecommendation(s.id)}
-                        className={`px-4 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1 ${
-                          recommendedStudents.includes(s.id)
-                            ? 'bg-emerald-500 text-black'
-                            : 'bg-white/5 text-[var(--text-secondary)] hover:bg-white/10 border border-[var(--border-default)]'
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>{recommendedStudents.includes(s.id) ? 'Endorsed for COC' : 'Endorse Candidate'}</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
@@ -1278,7 +1373,7 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
                     <div className="text-2xl font-mono font-bold text-[#E9C349] mt-1">91.4%</div>
                   </div>
                   <div className="p-4 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)]">
-                    <div className="text-[10px] font-mono text-[var(--text-secondary)] uppercase">COC Qualification Rate</div>
+                    <div className="text-[10px] font-mono text-[var(--text-secondary)] uppercase">Completion Rate</div>
                     <div className="text-2xl font-mono font-bold text-emerald-400 mt-1">95%</div>
                   </div>
                   <div className="p-4 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)]">

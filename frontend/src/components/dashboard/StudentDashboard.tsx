@@ -101,7 +101,7 @@ const WEEKLY_SCHEDULE = [
   { day: 'Tuesday', time: '8:30 AM - 12:30 PM', module: 'Practical Hair Cutting & Salon Models Practice', room: 'Practice Salon B' },
   { day: 'Wednesday', time: '8:30 AM - 10:30 AM', module: 'Sanitation, Hygiene & Client Consultation', room: 'Theory Hall 1' },
   { day: 'Thursday', time: '8:30 AM - 12:30 PM', module: 'Advanced Weaving & Braiding Techniques', room: 'Lab Studio A' },
-  { day: 'Friday', time: '9:00 AM - 12:00 PM', module: 'Live Client Assessment & COC Mock Prep', room: 'Main Studio Floor' }
+  { day: 'Friday', time: '9:00 AM - 12:00 PM', module: 'Live Client Assessment & Practical Skills Evaluation', room: 'Main Studio Floor' }
 ];
 
 const MODULES_LIST = [
@@ -130,7 +130,6 @@ const PAYMENT_HISTORY = [
 ];
 
 const ANNOUNCEMENTS = [
-  { id: 'ann-1', title: 'National COC Practical Exam Registration Open', date: 'August 02, 2026', body: 'All 6-month diploma candidates eligible for government COC assessment must register at the administration desk before August 15.', category: 'Important' },
   { id: 'ann-2', title: 'Special Masterclass: Bridal Makeup Trends 2026', date: 'August 10, 2026', body: 'Guest trainer Senior Artist Tsion Abera will conduct a live demonstration in Main Hall B starting 10:00 AM.', category: 'Event' },
   { id: 'ann-3', title: 'Salon Equipment Model Day', date: 'July 28, 2026', body: 'Students can invite family models for live hair coloring and haircut practical evaluations every Friday afternoon.', category: 'Notice' }
 ];
@@ -196,7 +195,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div><strong>Registration ID:</strong> ${STUDENT_DATA.id}</div>
             <div><strong>Program:</strong> ${STUDENT_DATA.program}</div>
             <div><strong>Duration:</strong> ${STUDENT_DATA.duration}</div>
-            <div><strong>Overall Attendance:</strong> ${STUDENT_DATA.overallAttendance}% (COC Compliant)</div>
+            <div><strong>Overall Attendance:</strong> ${STUDENT_DATA.overallAttendance}% (Good Standing)</div>
             <div><strong>Competency Status:</strong> ${STUDENT_DATA.competencyStatus}</div>
           </div>
 
@@ -268,7 +267,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div class="name">${STUDENT_DATA.fullName}</div>
             
             <div class="desc">
-              has successfully fulfilled all academic, practical lab requirements, and government COC competency standards in
+              has successfully fulfilled all academic and practical lab requirements
               <br/><strong>${STUDENT_DATA.program}</strong>
               <br/>with a final grade evaluation of <strong>Pass with Distinction (${STUDENT_DATA.competencyStatus})</strong>.
             </div>
@@ -563,7 +562,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)]">
                   <span className="text-[10px] font-mono text-[var(--text-secondary)] uppercase font-bold">Overall Attendance</span>
                   <div className="text-2xl font-mono font-bold text-emerald-400 mt-1">{STUDENT_DATA.overallAttendance}%</div>
-                  <span className="text-[10px] text-emerald-400 font-bold">✔ Exceeds 75% COC Minimum</span>
+                  <span className="text-[10px] text-emerald-400 font-bold">✔ Excellent Attendance</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)]">
@@ -753,8 +752,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Monthly Comparison & COC Eligibility</h2>
-                    <p className="text-xs text-[var(--text-secondary)]">Ethiopian TVET minimum threshold requires 75% practical lab attendance.</p>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Monthly Attendance Comparison</h2>
+                    <p className="text-xs text-[var(--text-secondary)]">Institute minimum attendance threshold requires 75% for practical lab sessions.</p>
                   </div>
                   <div className="text-right font-mono">
                     <span className="text-2xl font-bold text-emerald-400">{STUDENT_DATA.overallAttendance}%</span>
@@ -838,7 +837,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       </div>
                       <div className="flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
                         <span>0%</span>
-                        <span className="text-amber-400">75% COC minimum</span>
+                        <span className="text-amber-400">75% required</span>
                         <span>100%</span>
                       </div>
                     </div>
@@ -954,7 +953,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Official Academic Transcript</h2>
-                    <p className="text-xs text-[var(--text-secondary)]">Generated transcript for TVET government accreditation and COC verification.</p>
+                    <p className="text-xs text-[var(--text-secondary)]">Generated transcript for official institute records and certification.</p>
                   </div>
 
                   <button
@@ -1057,7 +1056,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   </div>
 
                   <p className="text-xs text-[var(--text-secondary)] max-w-xl mx-auto leading-relaxed">
-                    has successfully fulfilled all course requirements, practical studio lab evaluations, and COC competency standards in
+                    has successfully fulfilled all course requirements and practical studio lab evaluations in
                     <br/><strong className="text-[var(--text-primary)] text-sm">{STUDENT_DATA.program}</strong>
                   </p>
 
@@ -1205,7 +1204,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   <label className="text-[var(--text-secondary)] font-mono uppercase text-[10px]">Submit an Inquiry to Registrar</label>
                   <textarea
                     rows={4}
-                    placeholder="Type your question regarding schedules, transcripts, or COC exams..."
+                    placeholder="Type your question regarding schedules, transcripts, or courses..."
                     value={inquiryText}
                     onChange={(e) => setInquiryText(e.target.value)}
                     className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349]"
@@ -1234,8 +1233,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   <h3 className="text-sm font-bold text-[var(--text-primary)]">Frequently Asked Questions</h3>
                   <div className="space-y-2 text-xs">
                     <div className="p-3 rounded-xl bg-black/40">
-                      <div className="font-bold text-[#E9C349]">How do I register for the government COC exam?</div>
-                      <p className="text-[var(--text-secondary)] mt-1">Registrations open 3 weeks prior to course end date. Bring your national ID and 2 photos to the administration desk.</p>
+                      <div className="font-bold text-[#E9C349]">How do I get my certificate after completing the program?</div>
+                      <p className="text-[var(--text-secondary)] mt-1">Certificates are issued after successful completion of all modules and practical assessments. Visit the administration desk for processing.</p>
                     </div>
                     <div className="p-3 rounded-xl bg-black/40">
                       <div className="font-bold text-[#E9C349]">What happens if my attendance drops below 75%?</div>

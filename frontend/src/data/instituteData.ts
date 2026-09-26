@@ -289,12 +289,12 @@ export const testimonialsData: Testimonial[] = [
   {
     id: 't8',
     name: 'Abebe Tesfaye',
-    role: 'COC-Certified TVET Instructor',
+    role: 'TVET-Certified Instructor',
     program: 'Hair Dressing & Styling',
     photo: 'https://images.unsplash.com/photo-1500048993953-d23a436266cf?auto=format&fit=crop&w=400&q=80',
-    quote: 'I came as a student and now I teach. The COC examination preparation at Dare was thorough — I passed with distinction and was offered a teaching position right away.',
-    amharicQuote: 'ተማሪ ሆኜ ገብቼ አሁን አስተምራለሁ። COC ፈተናዬን ከፍተኛ ውጤት አምጥቼ ወዲያው ለትምህርት ቀርቤ ተቀጠርኩ።',
-    oromoQuote: 'Barattuu tahuun gallee amma barsiisota. Qormaata COC sadarkaa olaanaan darbe yeruma ta\'een hojii barsiisummaatti waamamne.',
+    quote: 'I came as a student and now I teach. The training at Dare was thorough — I excelled in my studies and was offered a teaching position right away.',
+    amharicQuote: 'ተማሪ ሆኜ ገብቼ አሁን አስተምራለሁ። በደሬ የተማርኩትን በደንብ ተለማምጄ ወዲያው ለትምህርት ቀርቤ ተቀጠርኩ።',
+    oromoQuote: 'Barattuu tahuun gallee amma barsiisota. Leenjii Dare keessatti argadhee gaarii ta\'een yeruma ta\'een hojii barsiisummaatti waamamne.',
     rating: 5
   },
   {
