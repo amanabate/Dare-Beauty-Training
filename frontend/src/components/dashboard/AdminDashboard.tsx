@@ -190,6 +190,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [faqs, setFaqs] = useState(INITIAL_FAQS);
   const [logs] = useState(INITIAL_LOGS);
 
+  // Load applications from localStorage on mount AND when tab becomes active
+  React.useEffect(() => {
+    const loadApplications = () => {
+      try {
+        const savedApps = localStorage.getItem('dare_applications');
+        console.log('📋 Loading applications from localStorage:', savedApps);
+        if (savedApps) {
+          const apps = JSON.parse(savedApps);
+          console.log('📋 Parsed applications:', apps);
+          if (Array.isArray(apps) && apps.length > 0) {
+            // Merge with initial applications (avoid duplicates by ID)
+            setApplications(prev => {
+              const existingIds = new Set(prev.map(a => a.id));
+              const newApps = apps.filter((app: any) => !existingIds.has(app.id));
+              console.log('📋 New applications to add:', newApps);
+              const merged = [...prev, ...newApps];
+              console.log('📋 Total applications after merge:', merged.length);
+              return merged;
+            });
+          }
+        } else {
+          console.log('📋 No saved applications found in localStorage');
+        }
+      } catch (error) {
+        console.error('❌ Failed to load applications from localStorage:', error);
+      }
+    };
+
+    // Load on mount
+    loadApplications();
+
+    // Also load when window regains focus (user comes back from landing page)
+    const handleFocus = () => {
+      console.log('👀 Window focused - checking for new applications');
+      loadApplications();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   // Modal / Action states
   const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
   const [addStudentModalOpen, setAddStudentModalOpen] = useState(false);
@@ -211,6 +252,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // ── Confirm-delete modal ─────────────────────────────────────────────────
   type ConfirmTarget = { id: string; label: string; type: 'instructor' | 'student' };
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null);
+
+  // ── Approve application modal ────────────────────────────────────────────
+  const [approveApplicationId, setApproveApplicationId] = useState<string | null>(null);
+
+  // ── Reject application modal ─────────────────────────────────────────────
+  const [rejectApplicationId, setRejectApplicationId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   // ── Edit instructor modal ────────────────────────────────────────────────
   type InstructorRecord = typeof INITIAL_INSTRUCTORS[0];
@@ -424,38 +472,73 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Handlers
   const handleApproveApplication = (id: string) => {
-    setApplications(prev => prev.map(a => a.id === id ? { ...a, status: 'Approved' } : a));
-    const app = applications.find(a => a.id === id);
-    if (app) {
-      const newRegId = `REG-2026-0${students.length + 1}`;
-      setStudents(prev => [
-        ...prev,
-        {
-          id: newRegId,
-          name: app.name,
-          gender: 'Female',
-          course: app.program,
-          duration: app.duration,
-          status: 'Active',
-          phone: app.phone,
-          email: app.email,
-          attendance: 100,
-          feeStatus: 'Pending',
-          balance: '2,500 ETB',
-          competency: 'Competent',
-          regDate: new Date().toISOString().slice(0, 10)
-        }
-      ]);
-      // Log registration fee as confirmed income in Finance
-      const matchedProgram = programs.find(p => p.name === app.program);
-      const feeStr = matchedProgram?.fee ?? '0 ETB';
-      const feeAmount = parseInt(feeStr.replace(/[^0-9]/g, ''), 10) || 0;
-      logRegistrationFeeAsIncome(
-        app.name, newRegId, app.program, feeAmount,
-        currentUser?.fullName || 'Admin',
-      );
-      alert(`Application approved! Student registered with ID: ${newRegId}`);
+    setApproveApplicationId(id);
+  };
+
+  const confirmApproveApplication = () => {
+    if (approveApplicationId) {
+      setApplications(prev => prev.map(a => a.id === approveApplicationId ? { ...a, status: 'Approved & Registered' } : a));
+      const app = applications.find(a => a.id === approveApplicationId);
+      if (app) {
+        const newRegId = `REG-2026-0${students.length + 1}`;
+        setStudents(prev => [
+          ...prev,
+          {
+            id: newRegId,
+            name: app.name,
+            gender: 'Female',
+            course: app.program,
+            duration: app.duration,
+            status: 'Active',
+            phone: app.phone,
+            email: app.email,
+            attendance: 100,
+            feeStatus: 'Pending',
+            balance: '2,500 ETB',
+            competency: 'Competent',
+            regDate: new Date().toISOString().slice(0, 10)
+          }
+        ]);
+        // Log registration fee as confirmed income in Finance
+        const matchedProgram = programs.find(p => p.name === app.program);
+        const feeStr = matchedProgram?.fee ?? '0 ETB';
+        const feeAmount = parseInt(feeStr.replace(/[^0-9]/g, ''), 10) || 0;
+        logRegistrationFeeAsIncome(
+          app.name, newRegId, app.program, feeAmount,
+          currentUser?.fullName || 'Admin',
+        );
+      }
+      setApproveApplicationId(null);
     }
+  };
+
+  const handleRejectApplication = (id: string) => {
+    setRejectApplicationId(id);
+    setRejectionReason('');
+  };
+
+  const confirmRejectApplication = () => {
+    if (rejectApplicationId) {
+      setApplications(prev => prev.map(a => 
+        a.id === rejectApplicationId ? { ...a, status: 'Rejected', rejectionReason: rejectionReason || 'No reason provided' } : a
+      ));
+      setRejectApplicationId(null);
+      setRejectionReason('');
+    }
+  };
+
+  const handleRecoverApplication = (id: string) => {
+    setApplications(prev => prev.map(a => 
+      a.id === id ? { ...a, status: 'Pending Approval', rejectionReason: '' } : a
+    ));
+  };
+
+  const handleRevertApprovedApplication = (id: string) => {
+    setApplications(prev => prev.map(a => 
+      a.id === id ? { ...a, status: 'Pending Approval' } : a
+    ));
+    // Note: This does NOT remove the student from students array or income entry
+    // In production, you'd need more complex cleanup logic
   };
 
   const handleAddStudentSubmit = (e: React.FormEvent) => {
@@ -920,9 +1003,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span>Institute Analytics</span>
             </button>
 
-
-
-
+            <button
+              onClick={() => setActiveTab('notifications')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
+                activeTab === 'notifications'
+                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Bell className="w-4 h-4" />
+                <span>Notifications</span>
+              </div>
+            </button>
 
             {/* ── Trash ── */}
             <button
@@ -1337,9 +1430,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* TAB 3: ADMISSIONS */}
           {activeTab === 'admissions' && (
             <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Online Application & Payment Verification</h2>
-                <p className="text-xs text-[var(--text-secondary)]">Review pending admissions, verify uploaded receipt screenshots, and assign registration numbers.</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Online Application & Payment Verification</h2>
+                  <p className="text-xs text-[var(--text-secondary)]">Review pending admissions, verify uploaded receipt screenshots, and assign registration numbers.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    try {
+                      const savedApps = localStorage.getItem('dare_applications');
+                      if (savedApps) {
+                        const apps = JSON.parse(savedApps);
+                        setApplications(prev => {
+                          const existingIds = new Set(prev.map(a => a.id));
+                          const newApps = apps.filter((app: any) => !existingIds.has(app.id));
+                          return [...prev, ...newApps];
+                        });
+                        alert(`Refreshed! Found ${apps.length} total applications in storage.`);
+                      }
+                    } catch (error) {
+                      console.error('Refresh failed:', error);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#E9C349] text-black text-xs font-bold hover:brightness-110 transition-all"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Refresh Applications
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1349,7 +1466,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-mono text-[10px] text-[#E9C349] font-bold">{app.id}</span>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          app.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                          app.status === 'Approved & Registered' 
+                            ? 'bg-emerald-500/20 text-emerald-400' 
+                            : app.status === 'Rejected'
+                            ? 'bg-red-500/20 text-red-400'
+                            : 'bg-amber-500/20 text-amber-400'
                         }`}>
                           {app.status}
                         </span>
@@ -1363,6 +1484,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <div><span className="text-[var(--text-muted)]">Shift:</span> {app.shift} ({app.duration})</div>
                         <div><span className="text-[var(--text-muted)]">Applied:</span> {app.date}</div>
                       </div>
+
+                      {app.status === 'Rejected' && (app as any).rejectionReason && (
+                        <div className="mt-2 p-2 rounded-xl bg-red-500/10 border border-red-500/25">
+                          <div className="text-[10px] font-bold text-red-400 uppercase mb-1">Rejection Reason:</div>
+                          <div className="text-xs text-red-300">{(app as any).rejectionReason}</div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -1374,13 +1502,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <span>View Payment Screenshot</span>
                       </button>
 
-                      {app.status !== 'Approved' && (
+                      {app.status === 'Pending Approval' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleApproveApplication(app.id)}
+                            className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-1"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleRejectApplication(app.id)}
+                            className="flex-1 py-2 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs transition-all flex items-center justify-center gap-1"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            Reject
+                          </button>
+                        </div>
+                      )}
+
+                      {app.status === 'Rejected' && (
                         <button
-                          onClick={() => handleApproveApplication(app.id)}
-                          className="w-full py-2 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:bg-[#F5D468] transition-all"
+                          onClick={() => handleRecoverApplication(app.id)}
+                          className="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-1"
                         >
-                          Approve & Assign ID
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          Recover to Pending
                         </button>
+                      )}
+
+                      {app.status === 'Approved & Registered' && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-center gap-1.5 py-2 text-emerald-400 text-xs font-semibold">
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Approved & Registered</span>
+                          </div>
+                          <button
+                            onClick={() => handleRevertApprovedApplication(app.id)}
+                            className="w-full py-2 rounded-xl bg-amber-600/70 hover:bg-amber-600 text-white font-bold text-xs transition-all flex items-center justify-center gap-1"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            Revert to Pending
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1761,7 +1925,74 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
+          {/* TAB: NOTIFICATIONS */}
+          {activeTab === 'notifications' && (
+            <div className="space-y-5">
+              {/* Header */}
+              <div className="pb-4 border-b border-[var(--border-default)]">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-1 rounded-full bg-[#E9C349]/20 text-[#E9C349] text-[10px] font-mono font-bold border border-[#E9C349]/30 flex items-center gap-1.5">
+                    <Bell className="w-3 h-3" /> Notifications
+                  </span>
+                  <span className="text-[10px] font-mono text-[var(--text-muted)]">REAL-TIME ALERTS</span>
+                </div>
+                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Notification Center</h2>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  Monitor applications, inquiries, payments, system events, and student activity in real-time.
+                </p>
+              </div>
 
+              {/* Info Banner */}
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/25">
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+                  <Bell className="w-5 h-5 text-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] mb-1">Centralized Notification Hub</h3>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                    The notification bell icon <Bell className="w-3 h-3 inline" /> in the top header bar provides instant access to all system alerts, application submissions, payment confirmations, and inquiry messages. Click the bell to view a live dropdown feed, or visit this tab for full notification management with filtering, bulk actions, and export capabilities.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-[10px] font-mono border border-emerald-500/30">✓ Applications</span>
+                    <span className="px-2 py-1 rounded-lg bg-amber-500/15 text-amber-400 text-[10px] font-mono border border-amber-500/30">✓ Inquiries</span>
+                    <span className="px-2 py-1 rounded-lg bg-purple-500/15 text-purple-400 text-[10px] font-mono border border-purple-500/30">✓ Payments</span>
+                    <span className="px-2 py-1 rounded-lg bg-blue-500/15 text-blue-400 text-[10px] font-mono border border-blue-500/30">✓ System Events</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-1">
+                  <div className="text-[9px] font-mono uppercase tracking-wider text-[var(--text-muted)]">Total Notifications</div>
+                  <div className="text-2xl font-mono font-bold text-[var(--text-primary)]">-</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-emerald-500/30 space-y-1">
+                  <div className="text-[9px] font-mono uppercase tracking-wider text-[var(--text-muted)]">Unread</div>
+                  <div className="text-2xl font-mono font-bold text-emerald-400">-</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-amber-500/30 space-y-1">
+                  <div className="text-[9px] font-mono uppercase tracking-wider text-[var(--text-muted)]">Applications</div>
+                  <div className="text-2xl font-mono font-bold text-amber-400">-</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-blue-500/30 space-y-1">
+                  <div className="text-[9px] font-mono uppercase tracking-wider text-[var(--text-muted)]">System</div>
+                  <div className="text-2xl font-mono font-bold text-blue-400">-</div>
+                </div>
+              </div>
+
+              {/* Placeholder Content */}
+              <div className="p-12 text-center rounded-2xl border-2 border-dashed border-[var(--border-default)] bg-[var(--bg-glass)]">
+                <div className="w-16 h-16 rounded-full bg-[#E9C349]/15 flex items-center justify-center mx-auto mb-4">
+                  <Bell className="w-8 h-8 text-[#E9C349]" />
+                </div>
+                <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2">Access via Header Bell Icon</h3>
+                <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">
+                  Click the notification bell <Bell className="w-3 h-3 inline" /> in the top header bar to view and manage all real-time alerts. The dropdown provides quick access to unread notifications, filtering options, and mark-as-read actions. This dedicated tab serves as a permanent archive and management interface.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* TAB: TRASH / DELETED ITEMS */}
           {activeTab === 'trash' && (
@@ -1906,9 +2137,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* MODAL 2: Add New Student Modal */}
-      {addStudentModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-panel)] border border-[#E9C349]/40 rounded-3xl p-6 max-w-md w-full space-y-4">
+      <AnimatePresence>
+        {addStudentModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-end p-4">
+            <motion.div
+              initial={{ opacity: 0, x: '100%' }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="bg-[var(--bg-panel)] border border-[#E9C349]/40 rounded-3xl p-6 max-w-md w-full space-y-4 h-full max-h-screen overflow-y-auto"
+            >
             <div className="flex items-center justify-between text-[var(--text-primary)] border-b border-[var(--border-default)] pb-3">
               <h3 className="text-base font-bold font-serif">Register New Student</h3>
               <button onClick={() => setAddStudentModalOpen(false)} className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
@@ -1995,9 +2233,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* ── CONFIRM DELETE MODAL ── */}
       <AnimatePresence>
@@ -2054,14 +2293,149 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
       </AnimatePresence>
 
-      {/* MODAL: Add New Instructor */}
-      {addInstructorModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+      {/* ── APPROVE APPLICATION MODAL ── */}
+      <AnimatePresence>
+        {approveApplicationId && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-[var(--bg-panel)] border border-[#E9C349]/40 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
           >
+            <motion.div
+              initial={{ scale: 0.9, y: 16, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 16, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 340 }}
+              className="bg-[var(--bg-panel)] border border-emerald-500/30 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5"
+            >
+              {/* Icon + title */}
+              <div className="flex items-center gap-3 border-b border-[var(--border-default)] pb-4">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[var(--text-primary)] font-serif">Approve Application</h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    This will register the student and mark the application as "Approved & Registered"
+                  </p>
+                </div>
+              </div>
+
+              {/* Info message */}
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+                <p className="text-xs text-emerald-300 leading-relaxed">
+                  ✓ Student will be added to the system<br />
+                  ✓ Registration fee will be logged in Finance<br />
+                  ✓ Application status will change to "Approved & Registered"
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmApproveApplication}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow flex items-center justify-center gap-1.5"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Confirm Approval
+                </button>
+                <button
+                  onClick={() => {
+                    setApproveApplicationId(null);
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-[var(--text-primary)] font-semibold text-xs transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── REJECT APPLICATION MODAL ── */}
+      <AnimatePresence>
+        {rejectApplicationId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 16, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 16, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 340 }}
+              className="bg-[var(--bg-panel)] border border-red-500/30 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5"
+            >
+              {/* Icon + title */}
+              <div className="flex items-center gap-3 border-b border-[var(--border-default)] pb-4">
+                <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center shrink-0">
+                  <XCircle className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[var(--text-primary)] font-serif">Reject Application</h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    Please provide a reason for rejecting this application
+                  </p>
+                </div>
+              </div>
+
+              {/* Rejection reason input */}
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
+                  Rejection Reason
+                </label>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="e.g. Screenshot is unclear, payment amount incorrect, duplicate submission..."
+                  rows={4}
+                  className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-red-400 transition-all resize-none"
+                  autoFocus
+                />
+                <p className="text-[10px] text-[var(--text-muted)] mt-1.5">
+                  This reason will be shown to help the applicant understand the rejection.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmRejectApplication}
+                  className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-all shadow flex items-center justify-center gap-1.5"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Confirm Rejection
+                </button>
+                <button
+                  onClick={() => {
+                    setRejectApplicationId(null);
+                    setRejectionReason('');
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-[var(--text-primary)] font-semibold text-xs transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: Add New Instructor */}
+      <AnimatePresence>
+        {addInstructorModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-end p-4">
+            <motion.div
+              initial={{ opacity: 0, x: '100%' }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="bg-[var(--bg-panel)] border border-[#E9C349]/40 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl h-full max-h-screen overflow-y-auto"
+            >
             {/* Modal header */}
             <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
               <div className="flex items-center gap-2">
@@ -2285,7 +2659,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </form>
           </motion.div>
         </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* MODAL: Edit Instructor */}
       <AnimatePresence>
