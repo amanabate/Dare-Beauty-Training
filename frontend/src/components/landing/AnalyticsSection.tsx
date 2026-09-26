@@ -159,7 +159,7 @@ export const AnalyticsSection: React.FC<AnalyticsSectionProps> = ({ currentLang 
                 <ArrowUpRight className="w-3.5 h-3.5" /> +1.2%
               </span>
             </div>
-            <p className="text-[11px] text-[var(--text-muted)] mt-1">COC Certification qualified</p>
+            <p className="text-[11px] text-[var(--text-muted)] mt-1">Certification qualified</p>
           </motion.div>
 
           <motion.div

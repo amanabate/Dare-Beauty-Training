@@ -148,8 +148,7 @@ const INITIAL_CERTIFICATES = [
 ];
 
 const INITIAL_FAQS = [
-  { id: 'faq-1', question: 'What are the admission entry requirements?', answer: 'Minimum grade 8 or 10 completion certificate, national ID card copy, and 2 passport size photos.' },
-  { id: 'faq-2', question: 'Do you offer government COC certification prep?', answer: 'Yes! All courses include intensive COC practical exam preparation and official accreditation guidelines.' }
+  { id: 'faq-1', question: 'What are the admission entry requirements?', answer: 'Minimum grade 8 or 10 completion certificate, national ID card copy, and 2 passport size photos.' }
 ];
 
 const INITIAL_LOGS = [
@@ -1279,7 +1278,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)] hover:border-[#E9C349]/40 transition-all">
                   <span className="text-[10px] font-mono text-[var(--text-secondary)] uppercase font-bold">Certificates Issued</span>
                   <div className="text-2xl font-mono font-bold text-[var(--text-primary)] mt-1">480+</div>
-                  <span className="text-[10px] text-[var(--text-secondary)]">COC Verified</span>
+                  <span className="text-[10px] text-[var(--text-secondary)]">Official Certificates</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-default)] hover:border-[#E9C349]/40 transition-all">
