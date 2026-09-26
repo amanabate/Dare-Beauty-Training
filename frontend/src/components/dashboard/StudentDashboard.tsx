@@ -147,7 +147,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [editPhone, setEditPhone] = useState(STUDENT_DATA.phone);
   const [editEmail, setEditEmail] = useState(STUDENT_DATA.email);
   const [uploadedReceipt, setUploadedReceipt] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [receiptUploadSuccess, setReceiptUploadSuccess] = useState(false);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [inquiryText, setInquiryText] = useState('');
   const [inquirySent, setInquirySent] = useState(false);
 
@@ -472,18 +474,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <span className="ml-auto font-mono text-[10px] bg-amber-500 text-black px-1.5 py-0.5 rounded-full font-bold">
                 {ANNOUNCEMENTS.length}
               </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('support')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'support'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span>Help & Support FAQ</span>
             </button>
           </div>
 
@@ -1103,40 +1093,133 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     <span>Submit Payment Receipt Screenshot</span>
                   </h3>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <label className="cursor-pointer flex-1 w-full p-3 rounded-xl bg-white/5 border border-dashed border-[#E9C349]/50 text-center text-xs text-[var(--text-secondary)] hover:bg-white/10">
-                      <Upload className="w-4 h-4 mx-auto mb-1 text-[#E9C349]" />
-                      <span>{uploadedReceipt ? uploadedReceipt.name : 'Click to upload screenshot (Telebirr, CBE Birr, Bank Transfer)'}</span>
+                  {!uploadedReceipt && !isUploadingReceipt ? (
+                    // Empty State - Upload Zone
+                    <label className="cursor-pointer block p-8 rounded-xl bg-white/5 border-2 border-dashed border-[#E9C349]/50 text-center hover:bg-white/10 transition-all">
+                      <Upload className="w-8 h-8 mx-auto mb-2 text-[#E9C349]" />
+                      <p className="text-sm font-semibold text-[var(--text-primary)] mb-1">Click to upload screenshot</p>
+                      <p className="text-xs text-[var(--text-secondary)]">Telebirr, CBE Birr, or Bank Transfer receipt</p>
                       <input
                         type="file"
                         accept="image/*"
                         className="hidden"
                         onChange={(e) => {
                           if (e.target.files && e.target.files[0]) {
-                            setUploadedReceipt(e.target.files[0]);
+                            const file = e.target.files[0];
+                            setIsUploadingReceipt(true);
+                            
+                            // Create preview URL
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              // Simulate upload delay for better UX
+                              setTimeout(() => {
+                                setReceiptPreview(reader.result as string);
+                                setUploadedReceipt(file);
+                                setIsUploadingReceipt(false);
+                              }, 1500);
+                            };
+                            reader.readAsDataURL(file);
                           }
                         }}
                       />
                     </label>
+                  ) : isUploadingReceipt ? (
+                    // Uploading State - Loading Animation
+                    <div className="p-8 rounded-xl bg-[var(--bg-panel)] border-2 border-[#E9C349]/50 text-center space-y-4">
+                      <div className="relative w-16 h-16 mx-auto">
+                        <div className="absolute inset-0 border-4 border-[#E9C349]/20 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-transparent border-t-[#E9C349] rounded-full animate-spin"></div>
+                        <Upload className="absolute inset-0 m-auto w-6 h-6 text-[#E9C349]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[var(--text-primary)] mb-1">Uploading receipt...</p>
+                        <p className="text-xs text-[var(--text-secondary)]">Processing your payment screenshot</p>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-[#E9C349] to-amber-300 rounded-full animate-pulse" style={{ width: '75%' }}></div>
+                      </div>
+                    </div>
+                  ) : uploadedReceipt ? (
+                    // Uploaded State - Preview & Actions
+                    <div className="space-y-3">
+                      {/* Success Badge */}
+                      <div className="flex items-center justify-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 animate-pulse" />
+                        <span className="text-sm font-bold text-emerald-400">Receipt Uploaded Successfully</span>
+                      </div>
 
-                    <button
-                      onClick={() => {
-                        if (uploadedReceipt) {
-                          setReceiptUploadSuccess(true);
-                          setTimeout(() => setReceiptUploadSuccess(false), 5000);
-                        }
-                      }}
-                      className="px-5 py-3 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:brightness-110 shrink-0 w-full sm:w-auto"
-                    >
-                      Submit Receipt
-                    </button>
-                  </div>
+                      {/* Image Preview */}
+                      <div className="relative rounded-xl overflow-hidden border-2 border-emerald-500/50 bg-black/40 shadow-lg">
+                        <img 
+                          src={receiptPreview || ''} 
+                          alt="Receipt preview" 
+                          className="w-full h-64 object-contain"
+                        />
+                        {/* Remove button overlay */}
+                        <button
+                          onClick={() => {
+                            setUploadedReceipt(null);
+                            setReceiptPreview(null);
+                            setReceiptUploadSuccess(false);
+                          }}
+                          className="absolute top-3 right-3 p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg flex items-center gap-1.5 text-xs font-bold"
+                          title="Remove receipt"
+                        >
+                          <X className="w-4 h-4" />
+                          Remove
+                        </button>
+                      </div>
+
+                      {/* File Info Card */}
+                      <div className="p-3 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-default)]">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-[var(--text-primary)] truncate">{uploadedReceipt.name}</p>
+                              <p className="text-[10px] text-[var(--text-secondary)] font-mono">
+                                {(uploadedReceipt.size / 1024).toFixed(1)} KB • Ready to submit
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Submit Button */}
+                      <button
+                        onClick={() => {
+                          if (uploadedReceipt) {
+                            setReceiptUploadSuccess(true);
+                            setTimeout(() => {
+                              setReceiptUploadSuccess(false);
+                              setUploadedReceipt(null);
+                              setReceiptPreview(null);
+                            }, 3000);
+                          }
+                        }}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-[#E9C349] to-amber-400 text-black font-bold text-sm hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-lg"
+                      >
+                        <Upload className="w-5 h-5" />
+                        Submit Receipt to Finance Department
+                      </button>
+                    </div>
+                  ) : null}
 
                   {receiptUploadSuccess && (
-                    <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center space-x-2">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Receipt submitted successfully! Finance department will review within 24 hours.</span>
-                    </div>
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-sm font-bold flex items-start gap-3"
+                    >
+                      <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold mb-1">Receipt Submitted!</p>
+                        <p className="text-xs font-normal">Finance department will review your payment within 24 hours.</p>
+                      </div>
+                    </motion.div>
                   )}
                 </div>
 
@@ -1194,57 +1277,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </div>
           )}
 
-          {/* TAB 10: HELP & SUPPORT */}
-          {activeTab === 'support' && (
-            <div className="max-w-3xl mx-auto space-y-6">
-              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Student Support & Inquiry Desk</h2>
-
-                <div className="space-y-3 text-xs">
-                  <label className="text-[var(--text-secondary)] font-mono uppercase text-[10px]">Submit an Inquiry to Registrar</label>
-                  <textarea
-                    rows={4}
-                    placeholder="Type your question regarding schedules, transcripts, or courses..."
-                    value={inquiryText}
-                    onChange={(e) => setInquiryText(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349]"
-                  />
-                  <button
-                    onClick={() => {
-                      if (inquiryText) {
-                        setInquirySent(true);
-                        setInquiryText('');
-                        setTimeout(() => setInquirySent(false), 4000);
-                      }
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:brightness-110"
-                  >
-                    Send Inquiry
-                  </button>
-
-                  {inquirySent && (
-                    <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 text-xs font-bold">
-                      Your inquiry has been submitted! Registrar staff will reply shortly.
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-6 border-t border-[var(--border-default)] space-y-3">
-                  <h3 className="text-sm font-bold text-[var(--text-primary)]">Frequently Asked Questions</h3>
-                  <div className="space-y-2 text-xs">
-                    <div className="p-3 rounded-xl bg-black/40">
-                      <div className="font-bold text-[#E9C349]">How do I get my certificate after completing the program?</div>
-                      <p className="text-[var(--text-secondary)] mt-1">Certificates are issued after successful completion of all modules and practical assessments. Visit the administration desk for processing.</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-black/40">
-                      <div className="font-bold text-[#E9C349]">What happens if my attendance drops below 75%?</div>
-                      <p className="text-[var(--text-secondary)] mt-1">Students falling below 75% lab attendance must complete makeup practical lab sessions before certificate issuance.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </main>
       </div>
     </div>
