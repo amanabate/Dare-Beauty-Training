@@ -40,6 +40,8 @@ import {
   Calendar,
   Users,
   LogOut,
+  Grid3x3,
+  List,
 } from 'lucide-react';
 import { Language, ThemeMode, UserAccount } from '../../types';
 import { exportToCSV } from '../../utils/exportUtils';
@@ -258,6 +260,7 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
   const [gradeTab, setGradeTab] = useState<'roster' | 'detail'>('roster');
   const [gradingStudentId, setGradingStudentId] = useState<string | null>(null);
   const [gradeSearchTerm, setGradeSearchTerm] = useState('');
+  const [gradeViewMode, setGradeViewMode] = useState<'cards' | 'rows'>('cards');
 
   // Add / Edit modal
   type AssessmentFormState = {
@@ -980,19 +983,48 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
               {/* ── Roster view: one card per student ── */}
               {gradeTab === 'roster' && (
                 <>
-                  {/* Search */}
-                  <div className="relative max-w-xs">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                    <input
-                      value={gradeSearchTerm}
-                      onChange={e => setGradeSearchTerm(e.target.value)}
-                      placeholder="Search student name or ID…"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none focus:border-[#E9C349]"
-                    />
+                  {/* Search and View Toggle */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="relative flex-1 max-w-xs">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                      <input
+                        value={gradeSearchTerm}
+                        onChange={e => setGradeSearchTerm(e.target.value)}
+                        placeholder="Search student name or ID…"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none focus:border-[#E9C349]"
+                      />
+                    </div>
+
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center gap-2 p-1 rounded-xl bg-[var(--bg-glass)] border border-[var(--border-default)]">
+                      <button
+                        onClick={() => setGradeViewMode('cards')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                          gradeViewMode === 'cards'
+                            ? 'bg-[#E9C349] text-black shadow-sm'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        <Grid3x3 className="w-3.5 h-3.5" />
+                        <span>Cards</span>
+                      </button>
+                      <button
+                        onClick={() => setGradeViewMode('rows')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                          gradeViewMode === 'rows'
+                            ? 'bg-[#E9C349] text-black shadow-sm'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        <List className="w-3.5 h-3.5" />
+                        <span>Rows</span>
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Student cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {/* Cards View */}
+                  {gradeViewMode === 'cards' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {studentsList
                       .filter(s =>
                         s.name.toLowerCase().includes(gradeSearchTerm.toLowerCase()) ||
@@ -1069,6 +1101,89 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
                         );
                       })}
                   </div>
+                  )}
+
+                  {/* Rows View - Table Format */}
+                  {gradeViewMode === 'rows' && (
+                    <div className="p-5 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-[var(--border-default)]">
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide">Student</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-center">ID</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide">Course</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-center">Avg Score</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-center">Assessments</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-center">Attendance</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-center">Status</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {studentsList
+                            .filter(s =>
+                              s.name.toLowerCase().includes(gradeSearchTerm.toLowerCase()) ||
+                              s.id.toLowerCase().includes(gradeSearchTerm.toLowerCase())
+                            )
+                            .map(s => {
+                              const mine = assessments.filter(a => a.studentId === s.id);
+                              const avg  = mine.length ? avgScore(mine) : s.lastGrade;
+                              const comp = scoreToCompetency(avg);
+                              const compColor =
+                                comp === 'Highly Competent'      ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' :
+                                comp === 'Competent'             ? 'text-[#E9C349]   bg-[#E9C349]/10   border-[#E9C349]/30'   :
+                                                                  'text-red-400      bg-red-500/10      border-red-500/30';
+                              return (
+                                <tr key={s.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-glass)] transition-all">
+                                  <td className="p-3">
+                                    <div className="font-bold text-[var(--text-primary)] text-sm">{s.name}</div>
+                                    <div className="text-[10px] text-[var(--text-secondary)]">{s.shift} Shift</div>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className="font-mono text-[#E9C349] text-xs font-bold">{s.id}</span>
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="text-[var(--text-secondary)] text-xs">{s.course}</span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className="font-mono font-bold text-[#E9C349] text-base">{avg}%</span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className="font-mono text-[var(--text-primary)]">{mine.length}</span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className={`font-mono font-bold ${s.attendanceRate >= 75 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      {s.attendanceRate}%
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className={`px-2 py-1 rounded-full border text-[10px] font-bold ${compColor}`}>
+                                      {comp}
+                                    </span>
+                                  </td>
+                                  <td className="p-3">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button
+                                        onClick={() => { setGradingStudentId(s.id); setGradeTab('detail'); }}
+                                        className="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E9C349]/50 transition-all flex items-center gap-1"
+                                      >
+                                        <TrendingUp className="w-3 h-3" /> View
+                                      </button>
+                                      <button
+                                        onClick={() => handleOpenAddAssessment(s.id)}
+                                        className="px-3 py-1.5 rounded-lg bg-[#E9C349] text-black text-xs font-bold hover:brightness-110 transition-all flex items-center gap-1"
+                                      >
+                                        <Plus className="w-3 h-3" /> Add
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </>
               )}
 
