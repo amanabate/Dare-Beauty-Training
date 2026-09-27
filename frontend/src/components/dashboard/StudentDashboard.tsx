@@ -38,6 +38,9 @@ import {
   Layers,
   ArrowUpRight,
   LogOut,
+  Settings,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Language, ThemeMode, UserAccount } from '../../types';
 import { AttendanceHeatmap } from './AttendanceHeatmap';
@@ -58,13 +61,11 @@ interface StudentDashboardProps {
 
 type StudentTab =
   | 'overview'
-  | 'profile'
   | 'program'
   | 'attendance'
-  | 'grades'
-  | 'transcript'
-  | 'certificate'
-  | 'payments';
+  | 'assessments'
+  | 'payments'
+  | 'settings';
 
 // Mock Student Profile
 const STUDENT_DATA = {
@@ -144,6 +145,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [inquiryText, setInquiryText] = useState('');
   const [inquirySent, setInquirySent] = useState(false);
+  
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
 
   // Language Dictionary
   const t = {
@@ -363,18 +370,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </button>
 
             <button
-              onClick={() => setActiveTab('profile')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'profile'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              <span>My Student Profile</span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('program')}
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'program'
@@ -402,39 +397,15 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </button>
 
             <button
-              onClick={() => setActiveTab('grades')}
+              onClick={() => setActiveTab('assessments')}
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'grades'
+                activeTab === 'assessments'
                   ? 'bg-[#E9C349] text-black shadow-md font-bold'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
               }`}
             >
               <Award className="w-4 h-4" />
-              <span>Grades & Competency</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('transcript')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'transcript'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              <span>Official Transcript</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('certificate')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'certificate'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <Award className="w-4 h-4 text-amber-400" />
-              <span>Digital Certificate</span>
+              <span>My Assessments</span>
             </button>
 
             <button
@@ -451,6 +422,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
 
           <div className="pt-3 border-t border-[var(--border-default)] mt-4 space-y-2">
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
+                activeTab === 'settings'
+                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </button>
+            
             <div className="p-3 rounded-2xl bg-white/5 border border-[var(--border-default)] flex items-center space-x-3">
               <img
                 src={profilePhoto}
@@ -462,6 +445,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <div className="text-[10px] text-[var(--text-secondary)] font-mono">Student</div>
               </div>
             </div>
+            
             <button
               onClick={onLogout}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
@@ -576,17 +560,26 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </div>
           )}
 
-          {/* TAB 2: PROFILE */}
-          {activeTab === 'profile' && (
-            <div className="max-w-3xl mx-auto space-y-6">
+          {/* TAB 2: SETTINGS */}
+          {activeTab === 'settings' && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Profile Settings Card */}
               <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Student Profile Settings</h2>
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
+                      <User className="w-5 h-5 text-[#E9C349]" />
+                      Profile Settings
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">Update your personal information and contact details</p>
+                  </div>
+                </div>
 
                 {/* Avatar change */}
                 <div className="flex items-center space-x-5">
                   <img src={profilePhoto} alt="Student Avatar" className="w-20 h-20 rounded-2xl object-cover border-2 border-[#E9C349]" />
                   <div className="space-y-2">
-                    <label className="cursor-pointer inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-[#E9C349] text-black font-bold text-xs">
+                    <label className="cursor-pointer inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:brightness-110 transition-all">
                       <Upload className="w-3.5 h-3.5" />
                       <span>Upload New Photo</span>
                       <input
@@ -607,36 +600,162 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 {/* Form fields */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Full Name (English)</label>
-                    <input type="text" readOnly value={STUDENT_DATA.fullName} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Full Name (English)</label>
+                    <input type="text" readOnly value={STUDENT_DATA.fullName} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
                   </div>
                   <div>
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Full Name (Amharic)</label>
-                    <input type="text" readOnly value={STUDENT_DATA.amharicName} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] font-serif" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Full Name (Amharic)</label>
+                    <input type="text" readOnly value={STUDENT_DATA.amharicName} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] font-serif cursor-not-allowed opacity-75" />
                   </div>
                   <div>
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Phone Number</label>
-                    <input type="text" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Phone Number</label>
+                    <input type="text" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all" />
                   </div>
                   <div>
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Email Address</label>
-                    <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Email Address</label>
+                    <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] outline-none focus:border-[#E9C349] transition-all" />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Residential Address</label>
-                    <input type="text" readOnly value={STUDENT_DATA.address} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Residential Address</label>
+                    <input type="text" readOnly value={STUDENT_DATA.address} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase">Emergency Contact Person</label>
-                    <input type="text" readOnly value={STUDENT_DATA.emergencyContact} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Emergency Contact Person</label>
+                    <input type="text" readOnly value={STUDENT_DATA.emergencyContact} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-[var(--border-default)] flex justify-end">
-                  <button onClick={() => alert('Profile contact info saved!')} className="px-5 py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:brightness-110">
+                  <button 
+                    onClick={() => {
+                      alert('Profile contact info saved successfully!');
+                    }} 
+                    className="px-5 py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:brightness-110 transition-all flex items-center gap-2"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
                     Save Profile Updates
                   </button>
                 </div>
+              </div>
+
+              {/* Change Password Card */}
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
+                      <Lock className="w-5 h-5 text-[#E9C349]" />
+                      Change Password
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">Update your account password for security</p>
+                  </div>
+                </div>
+
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (newPassword !== confirmPassword) {
+                      alert('New passwords do not match!');
+                      return;
+                    }
+                    if (newPassword.length < 6) {
+                      alert('Password must be at least 6 characters long');
+                      return;
+                    }
+                    // Simulate password change
+                    setPasswordChangeSuccess(true);
+                    setTimeout(() => {
+                      setCurrentPassword('');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                      setPasswordChangeSuccess(false);
+                      alert('Password changed successfully!');
+                    }, 1500);
+                  }}
+                  className="space-y-5"
+                >
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                      Current Password <span className="text-red-400">*</span>
+                    </label>
+                    <input 
+                      type="password" 
+                      required
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter your current password"
+                      className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                        New Password <span className="text-red-400">*</span>
+                      </label>
+                      <input 
+                        type="password" 
+                        required
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                        Confirm New Password <span className="text-red-400">*</span>
+                      </label>
+                      <input 
+                        type="password" 
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                      <div className="text-xs text-blue-300">
+                        <strong>Password Requirements:</strong> Minimum 6 characters. Include a mix of letters, numbers, and symbols for better security.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-[var(--border-default)] flex justify-end gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setCurrentPassword('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-[var(--bg-glass)] border border-[var(--border-default)] text-[var(--text-secondary)] font-bold text-xs hover:bg-white/10 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      disabled={passwordChangeSuccess}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {passwordChangeSuccess ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 animate-pulse" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5" />
+                          Change Password
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
@@ -688,38 +807,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 isEmbedded={true}
                 role="student"
               />
-
-              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Monthly Attendance Comparison</h2>
-                    <p className="text-xs text-[var(--text-secondary)]">Institute minimum attendance threshold requires 75% for practical lab sessions.</p>
-                  </div>
-                  <div className="text-right font-mono">
-                    <span className="text-2xl font-bold text-emerald-400">{STUDENT_DATA.overallAttendance}%</span>
-                    <div className="text-[10px] text-[var(--text-secondary)]">Cumulative Rate</div>
-                  </div>
-                </div>
-
-                {/* Recharts Attendance Bar Chart */}
-                <div className="h-64 w-full pt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={ATTENDANCE_HISTORY}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                      <XAxis dataKey="month" stroke="#888" fontSize={11} />
-                      <YAxis domain={[60, 100]} stroke="#888" fontSize={11} />
-                      <Tooltip contentStyle={{ backgroundColor: '#111', borderColor: '#E9C349', borderRadius: '12px' }} />
-                      <Bar dataKey="practical" name="Practical Lab Attendance" fill="#E9C349" radius={[6, 6, 0, 0]} />
-                      <Bar dataKey="theory" name="Theory Class Attendance" fill="#D4AF37" opacity={0.6} radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
             </div>
           )}
 
-          {/* TAB 5: GRADES */}
-          {activeTab === 'grades' && (() => {
+          {/* TAB 5: MY ASSESSMENTS */}
+          {activeTab === 'assessments' && (() => {
             // Find this student's assessments from the instructor's records
             const myAssessments = INITIAL_ASSESSMENTS
               .filter(a => a.studentId === STUDENT_DATA.id)
@@ -730,7 +822,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             return (
               <div className="space-y-6">
 
-                {/* ── Overall summary cards ── */}
+                {/* ── Overall Performance Summary ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {([
                     { emoji: '🥇', label: 'Highly Competent', range: '90% – 100%', active: comp === 'Highly Competent' },
@@ -749,20 +841,20 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   ))}
                 </div>
 
-                {/* ── Instructor-graded practical assessments ── */}
+                {/* ── Assessment Results Table ── */}
                 <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-5">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
-                      <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Practical Assessment Results</h2>
+                      <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">My Practical Assessment Results</h2>
                       <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                        Scores recorded by your instructor — read only.
+                        View scores recorded by your instructor for practical training sessions.
                       </p>
                     </div>
                     <div className="text-right shrink-0">
                       <div className={`text-2xl font-mono font-bold ${avg >= 90 ? 'text-emerald-400' : avg >= 75 ? 'text-[#E9C349]' : 'text-red-400'}`}>
                         {myAssessments.length ? avg : '—'}%
                       </div>
-                      <div className="text-[10px] text-[var(--text-muted)] font-mono">avg · {myAssessments.length} assessments</div>
+                      <div className="text-[10px] text-[var(--text-muted)] font-mono">Average · {myAssessments.length} assessments</div>
                     </div>
                   </div>
 
@@ -845,181 +937,19 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       </table>
                     </div>
                   )}
-                </div>
 
-                {/* ── Programme module grades (existing static data) ── */}
-                <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
-                  <h3 className="text-base font-bold font-serif text-[var(--text-primary)]">Programme Module Scores</h3>
-                  <p className="text-xs text-[var(--text-secondary)]">Academic scores across all syllabus training units.</p>
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-[var(--border-default)] text-[#E9C349] font-mono text-[10px] uppercase">
-                        <th className="py-2">Module Code</th>
-                        <th className="py-2">Module Name</th>
-                        <th className="py-2">Practical Score</th>
-                        <th className="py-2">Result</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--border-subtle)]">
-                      {MODULES_LIST.map(m => (
-                        <tr key={m.id}>
-                          <td className="py-3 font-mono text-[#E9C349] font-bold">{m.id}</td>
-                          <td className="py-3 font-semibold text-[var(--text-primary)]">{m.name}</td>
-                          <td className="py-3 font-mono font-bold text-[var(--text-primary)]">{m.score}</td>
-                          <td className="py-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              m.grade === 'Highly Competent' ? 'bg-emerald-500/20 text-emerald-400' :
-                              m.grade === 'Competent'        ? 'bg-[#E9C349]/20 text-[#E9C349]' :
-                              m.grade === 'Scheduled'        ? 'bg-[var(--bg-glass)] text-[var(--text-muted)]' :
-                                                              'bg-red-500/20 text-red-400'
-                            }`}>
-                              {m.grade}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {/* Information Footer */}
+                  <div className="pt-4 border-t border-[var(--border-default)] text-xs text-[var(--text-secondary)]">
+                    <p className="flex items-center gap-2">
+                      <span className="text-amber-400">ℹ️</span>
+                      <span>Assessment scores are read-only and recorded by your instructors after practical evaluations.</span>
+                    </p>
+                  </div>
                 </div>
 
               </div>
             );
           })()}
-
-          {/* TAB 6: TRANSCRIPT */}
-          {activeTab === 'transcript' && (
-            <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Official Academic Transcript</h2>
-                    <p className="text-xs text-[var(--text-secondary)]">Generated transcript for official institute records and certification.</p>
-                  </div>
-
-                  <button
-                    onClick={handlePrintTranscript}
-                    className="px-4 py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs flex items-center space-x-2 hover:brightness-110"
-                  >
-                    <Printer className="w-4 h-4" />
-                    <span>Print Transcript</span>
-                  </button>
-                </div>
-
-                {/* Printable Transcript Frame */}
-                <div className="p-8 rounded-2xl bg-white text-black font-sans shadow-2xl border-4 border-[#D4AF37]/40 space-y-6">
-                  <div className="text-center border-b-2 border-[#D4AF37] pb-4">
-                    <h3 className="text-xl font-serif font-bold uppercase tracking-wider text-black">
-                      Dare Women's & Men's Beauty Training Institute
-                    </h3>
-                    <p className="text-xs text-gray-600 font-serif italic">ደሬ የሴቶች እና የወንዶች የውበት ሙያ ማሰልጠኛ ተቋም</p>
-                    <div className="text-xs font-bold text-[#D4AF37] uppercase tracking-widest mt-2">
-                      Academic Performance Transcript
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div><strong>Student Name:</strong> {STUDENT_DATA.fullName}</div>
-                    <div><strong>Registration ID:</strong> {STUDENT_DATA.id}</div>
-                    <div><strong>Program:</strong> {STUDENT_DATA.program}</div>
-                    <div><strong>Overall Attendance:</strong> {STUDENT_DATA.overallAttendance}%</div>
-                  </div>
-
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-black text-[#D4AF37]">
-                        <th className="p-2">Code</th>
-                        <th className="p-2">Module Title</th>
-                        <th className="p-2">Hours</th>
-                        <th className="p-2">Score</th>
-                        <th className="p-2">Result</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {MODULES_LIST.map(m => (
-                        <tr key={m.id} className="border-b border-gray-200">
-                          <td className="p-2 font-mono font-bold">{m.id}</td>
-                          <td className="p-2">{m.name}</td>
-                          <td className="p-2">{m.hours}</td>
-                          <td className="p-2 font-bold">{m.score}</td>
-                          <td className="p-2 font-bold">{m.grade}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  <div className="pt-8 flex justify-between items-end text-xs text-gray-600">
-                    <div>
-                      <p className="border-t border-black pt-1 w-48 font-bold">Registrar General</p>
-                    </div>
-                    <div className="text-center text-[10px] text-[#D4AF37] font-bold border border-[#D4AF37] p-2 rounded">
-                      OFFICIAL SEAL OF DARE INSTITUTE
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 7: CERTIFICATE */}
-          {activeTab === 'certificate' && (
-            <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Digital Vocational Qualification Certificate</h2>
-                    <p className="text-xs text-[var(--text-secondary)]">Official diploma issued upon completion of 6-month advanced training track.</p>
-                  </div>
-
-                  <button
-                    onClick={handlePrintCertificate}
-                    className="px-4 py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs flex items-center space-x-2 hover:brightness-110"
-                  >
-                    <Printer className="w-4 h-4" />
-                    <span>Print Certificate</span>
-                  </button>
-                </div>
-
-                {/* Digital Certificate Preview Card */}
-                <div className="p-10 rounded-3xl bg-gradient-to-b from-[var(--bg-base)] to-[var(--bg-card)] border-8 border-double border-[#D4AF37] text-center space-y-6 relative overflow-hidden shadow-2xl">
-                  <div className="text-[#E9C349] font-mono text-xs uppercase tracking-widest font-bold">
-                    Vocational Diploma Certification
-                  </div>
-
-                  <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[var(--text-primary)] tracking-wide">
-                    Dare Women's & Men's Beauty Institute
-                  </h3>
-
-                  <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest">This is to certify that</p>
-
-                  <div className="text-2xl sm:text-4xl font-serif font-bold text-[#E9C349] border-b-2 border-[#E9C349] inline-block px-8 py-2">
-                    {STUDENT_DATA.fullName}
-                  </div>
-
-                  <p className="text-xs text-[var(--text-secondary)] max-w-xl mx-auto leading-relaxed">
-                    has successfully fulfilled all course requirements and practical studio lab evaluations in
-                    <br/><strong className="text-[var(--text-primary)] text-sm">{STUDENT_DATA.program}</strong>
-                  </p>
-
-                  {/* Verification QR section */}
-                  <div className="pt-6 border-t border-[var(--border-default)] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--text-secondary)]">
-                    <div className="flex items-center space-x-3 text-left">
-                      <div className="p-2 rounded-xl bg-white text-black">
-                        <QrCode className="w-8 h-8" />
-                      </div>
-                      <div>
-                        <div className="font-mono text-[#E9C349] font-bold text-[10px]">VERIFICATION CODE</div>
-                        <div className="font-mono text-[var(--text-primary)] text-xs">DARE-2026-CERT-005</div>
-                      </div>
-                    </div>
-
-                    <div className="font-serif text-[#D4AF37] font-bold italic">
-                      Verified & Accredited by Ethiopian TVET Authority
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* TAB 8: PAYMENTS */}
           {activeTab === 'payments' && (

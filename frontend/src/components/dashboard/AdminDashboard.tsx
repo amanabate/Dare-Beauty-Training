@@ -173,6 +173,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('All');
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
+
   // Role Protection Definitions
   const ADMIN_ONLY_TABS: AdminTab[] = ['overview', 'admissions', 'fees'];
   const isInstructor = currentUser?.role === 'Instructor';
@@ -1105,6 +1111,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="text-[10px] text-[var(--text-secondary)] font-mono">Role: {currentUser?.role || 'System Admin'}</div>
               </div>
             </div>
+            
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
+                activeTab === 'settings'
+                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </button>
+            
             <button
               onClick={onLogout}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
@@ -2044,6 +2063,162 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">
                   Click the notification bell <Bell className="w-3 h-3 inline" /> in the top header bar to view and manage all real-time alerts. The dropdown provides quick access to unread notifications, filtering options, and mark-as-read actions. This dedicated tab serves as a permanent archive and management interface.
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: SETTINGS */}
+          {activeTab === 'settings' && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Profile Settings Card */}
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
+                      <UserCog className="w-5 h-5 text-[#E9C349]" />
+                      Administrator Profile
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">View your account information</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Full Name</label>
+                    <input type="text" readOnly value={currentUser?.fullName || 'System Administrator'} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
+                  </div>
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Role</label>
+                    <input type="text" readOnly value={currentUser?.role || 'Super Admin'} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
+                  </div>
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Email Address</label>
+                    <input type="text" readOnly value={currentUser?.email || 'admin@darebeauty.edu.et'} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
+                  </div>
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Phone Number</label>
+                    <input type="text" readOnly value={currentUser?.phone || '+251 11 234 5678'} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Change Password Card */}
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
+                      <Lock className="w-5 h-5 text-[#E9C349]" />
+                      Change Password
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">Update your account password for security</p>
+                  </div>
+                </div>
+
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (newPassword !== confirmPassword) {
+                      alert('New passwords do not match!');
+                      return;
+                    }
+                    if (newPassword.length < 6) {
+                      alert('Password must be at least 6 characters long');
+                      return;
+                    }
+                    setPasswordChangeSuccess(true);
+                    setTimeout(() => {
+                      setCurrentPassword('');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                      setPasswordChangeSuccess(false);
+                      alert('Password changed successfully!');
+                    }, 1500);
+                  }}
+                  className="space-y-5"
+                >
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                      Current Password <span className="text-red-400">*</span>
+                    </label>
+                    <input 
+                      type="password" 
+                      required
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter your current password"
+                      className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                        New Password <span className="text-red-400">*</span>
+                      </label>
+                      <input 
+                        type="password" 
+                        required
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                        Confirm New Password <span className="text-red-400">*</span>
+                      </label>
+                      <input 
+                        type="password" 
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                    <div className="flex items-start space-x-2">
+                      <AlertTriangle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                      <div className="text-xs text-blue-300">
+                        <strong>Password Requirements:</strong> Minimum 6 characters. Include a mix of letters, numbers, and symbols for better security.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-[var(--border-default)] flex justify-end gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setCurrentPassword('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-[var(--bg-glass)] border border-[var(--border-default)] text-[var(--text-secondary)] font-bold text-xs hover:bg-white/10 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      disabled={passwordChangeSuccess}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {passwordChangeSuccess ? (
+                        <>
+                          <CheckCircle className="w-3.5 h-3.5 animate-pulse" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5" />
+                          Change Password
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
