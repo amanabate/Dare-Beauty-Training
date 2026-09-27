@@ -8,7 +8,6 @@ import {
   BookOpen,
   CalendarCheck,
   Award,
-  Bell,
   X,
   Plus,
   CheckCircle2,
@@ -37,11 +36,13 @@ import {
   Search,
   CheckSquare,
   XSquare,
-  Send,
   BarChart3,
   Calendar,
   Users,
   LogOut,
+  Grid3x3,
+  List,
+  Settings,
 } from 'lucide-react';
 import { Language, ThemeMode, UserAccount } from '../../types';
 import { exportToCSV } from '../../utils/exportUtils';
@@ -63,16 +64,16 @@ interface InstructorDashboardProps {
 
 type InstructorTab =
   | 'overview'
-  | 'profile'
   | 'schedule'
   | 'students'
   | 'approved'
   | 'attendance'
   | 'grades'
+  | 'addassessment'
   | 'programs'
   | 'certification'
-  | 'announcements'
-  | 'reports';
+  | 'reports'
+  | 'settings';
 
 // Initial Mock Datasets for Instructor
 const INSTRUCTOR_DATA = {
@@ -191,6 +192,12 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedShiftFilter, setSelectedShiftFilter] = useState('All');
   
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
+  
   // Load approved applications from localStorage
   const [approvedApplications, setApprovedApplications] = React.useState<any[]>([]);
   
@@ -261,6 +268,7 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
   const [gradeTab, setGradeTab] = useState<'roster' | 'detail'>('roster');
   const [gradingStudentId, setGradingStudentId] = useState<string | null>(null);
   const [gradeSearchTerm, setGradeSearchTerm] = useState('');
+  const [gradeViewMode, setGradeViewMode] = useState<'cards' | 'rows'>('cards');
 
   // Add / Edit modal
   type AssessmentFormState = {
@@ -283,6 +291,17 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
     open: false,
     form: EMPTY_FORM,
   });
+  
+  // Quick assessment form state (for Add Assessment tab - bulk entry for all students)
+  const [quickAssessmentForm, setQuickAssessmentForm] = useState({
+    unit: '',
+    date: '',
+    maxScore: '100',
+    notes: '',
+  });
+  // Individual scores for each student
+  const [studentScores, setStudentScores] = useState<{ [studentId: string]: string }>({});
+  
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Grading Modal / State (legacy — kept for backward compat with other tabs)
@@ -290,11 +309,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
   const [gradeScoreInput, setGradeScoreInput] = useState('');
   const [gradeCompetencyInput, setGradeCompetencyInput] = useState<CompetencyLevel>('Highly Competent');
   
-  // Post Notice state
-  const [newNoticeTitle, setNewNoticeTitle] = useState('');
-  const [newNoticeBody, setNewNoticeBody] = useState('');
-  const [postedNotices, setPostedNotices] = useState<{ id: string; title: string; body: string; date: string }[]>([]);
-
   // Recommendation state
   const [recommendedStudents, setRecommendedStudents] = useState<string[]>(['REG-2026-005', 'REG-2026-002']);
 
@@ -377,6 +391,62 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
   const handleFormChange = (field: keyof typeof EMPTY_FORM, value: string) => {
     setAssessmentModal(prev => ({ ...prev, form: { ...prev.form, [field]: value } }));
   };
+  
+  // Quick assessment form handler (bulk entry)
+  const handleQuickFormChange = (field: keyof typeof quickAssessmentForm, value: string) => {
+    setQuickAssessmentForm(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleStudentScoreChange = (studentId: string, score: string) => {
+    setStudentScores(prev => ({ ...prev, [studentId]: score }));
+  };
+  
+  const handleSaveQuickAssessment = () => {
+    const { unit, date, maxScore, notes } = quickAssessmentForm;
+    
+    if (!unit || !date) {
+      alert('Please fill in unit and date');
+      return;
+    }
+    
+    const numMax = Math.max(1, Number(maxScore) || 100);
+    const newAssessments: PracticalAssessment[] = [];
+    
+    // Create assessment for each student who has a score entered
+    Object.entries(studentScores).forEach(([studentId, score]) => {
+      if (score && score.trim() !== '') {
+        const numScore = Math.min(100, Math.max(0, Number(score)));
+        newAssessments.push({
+          id: `asmnt-${Date.now()}-${studentId}`,
+          studentId,
+          unit,
+          date,
+          score: numScore,
+          maxScore: numMax,
+          notes,
+          gradedBy: INSTRUCTOR_DATA.name,
+        });
+      }
+    });
+    
+    if (newAssessments.length === 0) {
+      alert('Please enter at least one score');
+      return;
+    }
+    
+    const updated = [...assessments, ...newAssessments];
+    setAssessments(updated);
+    syncStudentGrades(updated);
+    
+    // Reset form
+    setQuickAssessmentForm({
+      unit: '',
+      date: '',
+      maxScore: '100',
+      notes: '',
+    });
+    setStudentScores({});
+  };
 
   // Search filtered list
   const filteredStudents = studentsList.filter(s => {
@@ -395,19 +465,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
     setSelectedStudentForGrading(null);
   };
 
-  const handlePostNotice = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newNoticeTitle || !newNoticeBody) return;
-    setPostedNotices(prev => [{
-      id: `notice-${Date.now()}`,
-      title: newNoticeTitle,
-      body: newNoticeBody,
-      date: 'Just now'
-    }, ...prev]);
-    setNewNoticeTitle('');
-    setNewNoticeBody('');
-    alert('Notice broadcasted to all assigned students!');
-  };
 
   const toggleRecommendation = (id: string) => {
     if (recommendedStudents.includes(id)) {
@@ -561,6 +618,18 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('addassessment')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
+                activeTab === 'addassessment'
+                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
+              }`}
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Assessment</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('programs')}
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'programs'
@@ -570,22 +639,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             >
               <BookOpen className="w-4 h-4" />
               <span>Assigned Programs</span>
-            </button>
-
-            <div className="pt-3 px-3 py-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest font-bold">
-              Communication & Tools
-            </div>
-
-            <button
-              onClick={() => setActiveTab('announcements')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'announcements'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <Bell className="w-4 h-4" />
-              <span>Post Class Notices</span>
             </button>
 
             <button
@@ -603,6 +656,18 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
           </div>
 
           <div className="pt-3 border-t border-[var(--border-default)] mt-4 space-y-2">
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
+                activeTab === 'settings'
+                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </button>
+            
             <div className="p-3 rounded-2xl bg-white/5 border border-[var(--border-default)] flex items-center space-x-3">
               <img
                 src="/images/dareLogo.jpeg"
@@ -614,6 +679,7 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
                 <div className="text-[10px] text-[var(--text-secondary)] font-mono">Instructor</div>
               </div>
             </div>
+            
             <button
               onClick={onLogout}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
@@ -1002,19 +1068,48 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
               {/* ── Roster view: one card per student ── */}
               {gradeTab === 'roster' && (
                 <>
-                  {/* Search */}
-                  <div className="relative max-w-xs">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                    <input
-                      value={gradeSearchTerm}
-                      onChange={e => setGradeSearchTerm(e.target.value)}
-                      placeholder="Search student name or ID…"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none focus:border-[#E9C349]"
-                    />
+                  {/* Search and View Toggle */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="relative flex-1 max-w-xs">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                      <input
+                        value={gradeSearchTerm}
+                        onChange={e => setGradeSearchTerm(e.target.value)}
+                        placeholder="Search student name or ID…"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none focus:border-[#E9C349]"
+                      />
+                    </div>
+
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center gap-2 p-1 rounded-xl bg-[var(--bg-glass)] border border-[var(--border-default)]">
+                      <button
+                        onClick={() => setGradeViewMode('cards')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                          gradeViewMode === 'cards'
+                            ? 'bg-[#E9C349] text-black shadow-sm'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        <Grid3x3 className="w-3.5 h-3.5" />
+                        <span>Cards</span>
+                      </button>
+                      <button
+                        onClick={() => setGradeViewMode('rows')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                          gradeViewMode === 'rows'
+                            ? 'bg-[#E9C349] text-black shadow-sm'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        <List className="w-3.5 h-3.5" />
+                        <span>Rows</span>
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Student cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {/* Cards View */}
+                  {gradeViewMode === 'cards' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {studentsList
                       .filter(s =>
                         s.name.toLowerCase().includes(gradeSearchTerm.toLowerCase()) ||
@@ -1091,6 +1186,89 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
                         );
                       })}
                   </div>
+                  )}
+
+                  {/* Rows View - Table Format */}
+                  {gradeViewMode === 'rows' && (
+                    <div className="p-5 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-[var(--border-default)]">
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide">Student</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-center">ID</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide">Course</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-center">Avg Score</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-center">Assessments</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-center">Attendance</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-center">Status</th>
+                            <th className="p-3 text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wide text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {studentsList
+                            .filter(s =>
+                              s.name.toLowerCase().includes(gradeSearchTerm.toLowerCase()) ||
+                              s.id.toLowerCase().includes(gradeSearchTerm.toLowerCase())
+                            )
+                            .map(s => {
+                              const mine = assessments.filter(a => a.studentId === s.id);
+                              const avg  = mine.length ? avgScore(mine) : s.lastGrade;
+                              const comp = scoreToCompetency(avg);
+                              const compColor =
+                                comp === 'Highly Competent'      ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' :
+                                comp === 'Competent'             ? 'text-[#E9C349]   bg-[#E9C349]/10   border-[#E9C349]/30'   :
+                                                                  'text-red-400      bg-red-500/10      border-red-500/30';
+                              return (
+                                <tr key={s.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-glass)] transition-all">
+                                  <td className="p-3">
+                                    <div className="font-bold text-[var(--text-primary)] text-sm">{s.name}</div>
+                                    <div className="text-[10px] text-[var(--text-secondary)]">{s.shift} Shift</div>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className="font-mono text-[#E9C349] text-xs font-bold">{s.id}</span>
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="text-[var(--text-secondary)] text-xs">{s.course}</span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className="font-mono font-bold text-[#E9C349] text-base">{avg}%</span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className="font-mono text-[var(--text-primary)]">{mine.length}</span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className={`font-mono font-bold ${s.attendanceRate >= 75 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      {s.attendanceRate}%
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className={`px-2 py-1 rounded-full border text-[10px] font-bold ${compColor}`}>
+                                      {comp}
+                                    </span>
+                                  </td>
+                                  <td className="p-3">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button
+                                        onClick={() => { setGradingStudentId(s.id); setGradeTab('detail'); }}
+                                        className="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E9C349]/50 transition-all flex items-center gap-1"
+                                      >
+                                        <TrendingUp className="w-3 h-3" /> View
+                                      </button>
+                                      <button
+                                        onClick={() => handleOpenAddAssessment(s.id)}
+                                        className="px-3 py-1.5 rounded-lg bg-[#E9C349] text-black text-xs font-bold hover:brightness-110 transition-all flex items-center gap-1"
+                                      >
+                                        <Plus className="w-3 h-3" /> Add
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -1243,91 +1421,344 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             </div>
           )}
 
-          {/* TAB 7: ANNOUNCEMENTS */}
-          {activeTab === 'announcements' && (
-            <div className="max-w-2xl mx-auto space-y-6">
-              <form onSubmit={handlePostNotice} className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
-                <h2 className="text-lg font-bold font-serif text-[var(--text-primary)]">Broadcast Class Notice to Students</h2>
-                <div>
-                  <label className="text-[10px] text-[var(--text-secondary)] font-mono uppercase">Notice Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={newNoticeTitle}
-                    onChange={(e) => setNewNoticeTitle(e.target.value)}
-                    placeholder="e.g. Bring Salon Hair dye model on Friday"
-                    className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-xs outline-none focus:border-[#E9C349]"
-                  />
+          {/* TAB 6: ADD ASSESSMENT - Bulk Entry for All Students */}
+          {activeTab === 'addassessment' && (
+            <div className="max-w-6xl mx-auto space-y-6">
+              {/* Assessment Details Card */}
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[#E9C349]/50 shadow-lg space-y-5">
+                <div className="border-b border-[var(--border-default)] pb-4">
+                  <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-[#E9C349]" />
+                    Add Assessment for All Students
+                  </h2>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">Enter assessment details once, then add scores for each student</p>
                 </div>
-                <div>
-                  <label className="text-[10px] text-[var(--text-secondary)] font-mono uppercase">Notice Instructions</label>
-                  <textarea
-                    required
-                    rows={3}
-                    value={newNoticeBody}
-                    onChange={(e) => setNewNoticeBody(e.target.value)}
-                    placeholder="Write detailed class instructions..."
-                    className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-xs outline-none focus:border-[#E9C349]"
-                  />
-                </div>
-                <button type="submit" className="w-full py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:brightness-110 flex items-center justify-center space-x-2">
-                  <Send className="w-4 h-4" />
-                  <span>Broadcast Notice</span>
-                </button>
-              </form>
 
-              {postedNotices.length > 0 && (
-                <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-3">
-                  <h3 className="text-sm font-bold text-[var(--text-primary)]">Broadcast History</h3>
-                  {postedNotices.map(n => (
-                    <div key={n.id} className="p-3.5 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] space-y-1">
-                      <div className="flex justify-between text-[10px] text-[#E9C349] font-mono">
-                        <span>{n.title}</span>
-                        <span>{n.date}</span>
-                      </div>
-                      <p className="text-xs text-[var(--text-secondary)]">{n.body}</p>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Unit */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-2">
+                      Practical Unit / Module *
+                    </label>
+                    <input
+                      type="text"
+                      list="assessment-units-list"
+                      value={quickAssessmentForm.unit}
+                      onChange={e => handleQuickFormChange('unit', e.target.value)}
+                      placeholder="Type custom or select from list..."
+                      className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[#E9C349] text-xs text-[var(--text-primary)] outline-none"
+                    />
+                    <datalist id="assessment-units-list">
+                      {ASSESSMENT_UNITS.map(u => (
+                        <option key={u} value={u} />
+                      ))}
+                    </datalist>
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-2">
+                      Assessment Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={quickAssessmentForm.date}
+                      onChange={e => handleQuickFormChange('date', e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[#E9C349] text-xs text-[var(--text-primary)] outline-none"
+                    />
+                  </div>
+
+                  {/* Max Score */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-2">
+                      Max Score
+                    </label>
+                    <input
+                      type="number"
+                      min="1" max="200"
+                      value={quickAssessmentForm.maxScore}
+                      onChange={e => handleQuickFormChange('maxScore', e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[#E9C349] text-xs text-[var(--text-primary)] outline-none font-mono"
+                    />
+                  </div>
                 </div>
-              )}
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-2">
+                    General Notes / Remarks (Optional)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={quickAssessmentForm.notes}
+                    onChange={e => handleQuickFormChange('notes', e.target.value)}
+                    placeholder="e.g. Practical assessment conducted in lab environment…"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[#E9C349] text-xs text-[var(--text-primary)] outline-none resize-none placeholder-[var(--text-faint)]"
+                  />
+                </div>
+              </div>
+
+              {/* Student Scores Card */}
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                  <div>
+                    <h3 className="font-bold text-[var(--text-primary)] text-sm">Enter Scores for Each Student</h3>
+                    <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">Leave blank to skip a student</p>
+                  </div>
+                  <div className="text-xs text-[var(--text-muted)] font-mono">
+                    {Object.values(studentScores).filter(s => s && s.trim() !== '').length} / {studentsList.length} entered
+                  </div>
+                </div>
+
+                {/* Student Score Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {studentsList.map(student => {
+                    const score = studentScores[student.id] || '';
+                    const scoreNum = score ? Number(score) : 0;
+                    const hasScore = score && score.trim() !== '';
+                    return (
+                      <div key={student.id} className="p-3 rounded-xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] space-y-2">
+                        {/* Student Info */}
+                        <div className="flex items-start gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-[#E9C349]/10 flex items-center justify-center text-[#E9C349] font-bold text-xs shrink-0">
+                            {student.name.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-[var(--text-primary)] text-xs truncate">{student.name}</div>
+                            <div className="text-[9px] text-[var(--text-muted)] font-mono">{student.id}</div>
+                            <div className="text-[9px] text-[var(--text-secondary)]">{student.course}</div>
+                          </div>
+                        </div>
+
+                        {/* Score Input */}
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max={quickAssessmentForm.maxScore}
+                            value={score}
+                            onChange={e => handleStudentScoreChange(student.id, e.target.value)}
+                            placeholder={`0-${quickAssessmentForm.maxScore}`}
+                            className="w-full px-3 py-2 rounded-lg bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[#E9C349] text-sm text-[var(--text-primary)] font-mono outline-none"
+                          />
+                          {hasScore && (
+                            <div className="mt-1.5 flex items-center justify-between text-[9px]">
+                              <span className={`font-bold font-mono ${
+                                scoreNum >= 90 ? 'text-emerald-400' :
+                                scoreNum >= 75 ? 'text-[#E9C349]' :
+                                'text-red-400'
+                              }`}>
+                                {scoreNum >= 90 ? '🥇 Highly' : scoreNum >= 75 ? '🥈 Competent' : '🥉 Developing'}
+                              </span>
+                              <span className="text-[var(--text-muted)]">
+                                {Math.round((scoreNum / Number(quickAssessmentForm.maxScore)) * 100)}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setActiveTab('grades');
+                    setQuickAssessmentForm({
+                      unit: '',
+                      date: '',
+                      maxScore: '100',
+                      notes: '',
+                    });
+                    setStudentScores({});
+                  }}
+                  className="flex-1 py-3 rounded-xl border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    handleSaveQuickAssessment();
+                    setActiveTab('grades');
+                  }}
+                  disabled={!quickAssessmentForm.unit || !quickAssessmentForm.date || Object.values(studentScores).filter(s => s && s.trim() !== '').length === 0}
+                  className="flex-1 py-3 rounded-xl bg-[#E9C349] text-black font-bold text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  <Star className="w-4 h-4" />
+                  Save All Assessments ({Object.values(studentScores).filter(s => s && s.trim() !== '').length})
+                </button>
+              </div>
             </div>
           )}
 
-          {/* TAB 8: PROFILE */}
-          {activeTab === 'profile' && (
-            <div className="max-w-2xl mx-auto space-y-6">
+          {/* TAB 8: SETTINGS */}
+          {activeTab === 'settings' && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Profile Settings Card */}
               <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Instructor Faculty Profile</h2>
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
+                      <User className="w-5 h-5 text-[#E9C349]" />
+                      Instructor Profile
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">View your faculty information</p>
+                  </div>
+                </div>
+
                 <div className="flex items-center space-x-4">
-                  <img src={INSTRUCTOR_DATA.photo} alt={INSTRUCTOR_DATA.name} className="w-16 h-16 rounded-2xl object-cover border-2 border-[#E9C349]" />
+                  <img src={INSTRUCTOR_DATA.photo} alt={INSTRUCTOR_DATA.name} className="w-20 h-20 rounded-2xl object-cover border-2 border-[#E9C349]" />
                   <div>
                     <div className="text-base font-bold text-[var(--text-primary)]">{INSTRUCTOR_DATA.name}</div>
-                    <div className="text-xs text-[#E9C349] font-mono">{INSTRUCTOR_DATA.id} • {INSTRUCTOR_DATA.title}</div>
+                    <div className="text-xs text-[#E9C349] font-mono">{INSTRUCTOR_DATA.id}</div>
+                    <div className="text-xs text-[var(--text-secondary)]">{INSTRUCTOR_DATA.title}</div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px]">Full Name</label>
-                    <input type="text" readOnly value={INSTRUCTOR_DATA.name} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Full Name</label>
+                    <input type="text" readOnly value={INSTRUCTOR_DATA.name} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
                   </div>
                   <div>
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px]">Amharic Name</label>
-                    <input type="text" readOnly value={INSTRUCTOR_DATA.amharicName} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] font-serif" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Amharic Name</label>
+                    <input type="text" readOnly value={INSTRUCTOR_DATA.amharicName} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] font-serif cursor-not-allowed opacity-75" />
                   </div>
                   <div>
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px]">Phone Number</label>
-                    <input type="text" readOnly value={INSTRUCTOR_DATA.phone} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Phone Number</label>
+                    <input type="text" readOnly value={INSTRUCTOR_DATA.phone} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
                   </div>
                   <div>
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px]">Email Address</label>
-                    <input type="text" readOnly value={INSTRUCTOR_DATA.email} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Email Address</label>
+                    <input type="text" readOnly value={INSTRUCTOR_DATA.email} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-[var(--text-secondary)] font-mono text-[10px]">Office & Studio</label>
-                    <input type="text" readOnly value={INSTRUCTOR_DATA.officeRoom} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]" />
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Office & Studio</label>
+                    <input type="text" readOnly value={INSTRUCTOR_DATA.officeRoom} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
                   </div>
                 </div>
+              </div>
+
+              {/* Change Password Card */}
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
+                      <Lock className="w-5 h-5 text-[#E9C349]" />
+                      Change Password
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">Update your account password for security</p>
+                  </div>
+                </div>
+
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (newPassword !== confirmPassword) {
+                      alert('New passwords do not match!');
+                      return;
+                    }
+                    if (newPassword.length < 6) {
+                      alert('Password must be at least 6 characters long');
+                      return;
+                    }
+                    setPasswordChangeSuccess(true);
+                    setTimeout(() => {
+                      setCurrentPassword('');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                      setPasswordChangeSuccess(false);
+                      alert('Password changed successfully!');
+                    }, 1500);
+                  }}
+                  className="space-y-5"
+                >
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                      Current Password <span className="text-red-400">*</span>
+                    </label>
+                    <input 
+                      type="password" 
+                      required
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter your current password"
+                      className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                        New Password <span className="text-red-400">*</span>
+                      </label>
+                      <input 
+                        type="password" 
+                        required
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                        Confirm New Password <span className="text-red-400">*</span>
+                      </label>
+                      <input 
+                        type="password" 
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                      <div className="text-xs text-blue-300">
+                        <strong>Password Requirements:</strong> Minimum 6 characters. Include a mix of letters, numbers, and symbols for better security.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-[var(--border-default)] flex justify-end gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setCurrentPassword('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-[var(--bg-glass)] border border-[var(--border-default)] text-[var(--text-secondary)] font-bold text-xs hover:bg-white/10 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      disabled={passwordChangeSuccess}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {passwordChangeSuccess ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 animate-pulse" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5" />
+                          Change Password
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
@@ -1610,3 +2041,5 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
     </div>
   );
 };
+
+export default InstructorDashboard;

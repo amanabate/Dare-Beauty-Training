@@ -173,6 +173,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('All');
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
+
   // Role Protection Definitions
   const ADMIN_ONLY_TABS: AdminTab[] = ['overview', 'admissions', 'fees'];
   const isInstructor = currentUser?.role === 'Instructor';
@@ -692,6 +698,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setSelectedCertPrint(newCert);
   };
 
+  // Print Certificate Handler (using Student Dashboard format)
+  const handlePrintCertificate = (cert: typeof INITIAL_CERTIFICATES[0]) => {
+    const win = window.open('', '_blank');
+    if (!win) return;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Certificate - ${cert.studentName}</title>
+          <style>
+            @page { size: landscape; margin: 0; }
+            body { font-family: 'Georgia', serif; background: #fff; margin: 0; padding: 40px; color: #111; text-align: center; }
+            .cert-box { border: 12px double #D4AF37; padding: 50px; position: relative; background: radial-gradient(circle, #ffffff 60%, #fffdf0 100%); min-height: 520px; }
+            .header { font-size: 32px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; color: #111; }
+            .amharic { font-size: 18px; color: #666; margin-top: 5px; }
+            .award { font-size: 16px; text-transform: uppercase; letter-spacing: 3px; margin-top: 30px; color: #D4AF37; font-weight: bold; }
+            .name { font-size: 38px; font-family: 'Times New Roman', serif; font-weight: bold; color: #111; margin: 20px 0; border-bottom: 2px solid #D4AF37; display: inline-block; padding: 0 30px; }
+            .desc { font-size: 16px; max-width: 700px; margin: 0 auto; line-height: 1.6; color: #333; }
+            .footer { margin-top: 50px; display: flex; justify-content: space-around; align-items: flex-end; }
+            .sig { border-top: 1px solid #111; width: 200px; padding-top: 5px; font-size: 12px; text-transform: uppercase; font-family: sans-serif; }
+            .qr { font-family: sans-serif; font-size: 10px; color: #777; border: 1px solid #ccc; padding: 8px; border-radius: 6px; }
+          </style>
+        </head>
+        <body>
+          <div class="cert-box">
+            <div class="header">Dare Women's & Men's Beauty Training Institute</div>
+            <div class="amharic">ደሬ የሴቶች እና የወንዶች የውበት ሙያ ማሰልጠኛ ተቋም</div>
+            <div class="award">Official Vocational Qualification Certificate</div>
+            
+            <p style="margin-top: 25px; font-size: 14px; text-transform: uppercase; color: #555;">This is to certify that</p>
+            <div class="name">${cert.studentName}</div>
+            
+            <div class="desc">
+              has successfully fulfilled all academic and practical lab requirements in
+              <br/><strong>${cert.program}</strong>
+              <br/>with a final grade evaluation of <strong>${cert.grade}</strong>.
+            </div>
+
+            <div class="footer">
+              <div class="sig">Institute Director</div>
+              <div class="qr">
+                <div>VERIFICATION CODE: ${cert.certNo}</div>
+                <div>${cert.verificationUrl}</div>
+              </div>
+              <div class="sig">Lead Academic Trainer</div>
+            </div>
+          </div>
+          <script>window.onload = function() { window.print(); }</script>
+        </body>
+      </html>
+    `;
+    win.document.write(html);
+    win.document.close();
+  };
+
   // Transcript modal — opens in-dashboard (same pattern as Certificate modal)
   const openTranscript = (student: typeof INITIAL_STUDENTS[0]) => {
     setSelectedTranscriptStudent(student);
@@ -1050,6 +1111,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="text-[10px] text-[var(--text-secondary)] font-mono">Role: {currentUser?.role || 'System Admin'}</div>
               </div>
             </div>
+            
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
+                activeTab === 'settings'
+                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </button>
+            
             <button
               onClick={onLogout}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
@@ -1993,6 +2067,162 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
+          {/* TAB: SETTINGS */}
+          {activeTab === 'settings' && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Profile Settings Card */}
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
+                      <UserCog className="w-5 h-5 text-[#E9C349]" />
+                      Administrator Profile
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">View your account information</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Full Name</label>
+                    <input type="text" readOnly value={currentUser?.fullName || 'System Administrator'} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
+                  </div>
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Role</label>
+                    <input type="text" readOnly value={currentUser?.role || 'Super Admin'} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
+                  </div>
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Email Address</label>
+                    <input type="text" readOnly value={currentUser?.email || 'admin@darebeauty.edu.et'} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
+                  </div>
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold">Phone Number</label>
+                    <input type="text" readOnly value={currentUser?.phone || '+251 11 234 5678'} className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-not-allowed opacity-75" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Change Password Card */}
+              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-6">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] flex items-center gap-2">
+                      <Lock className="w-5 h-5 text-[#E9C349]" />
+                      Change Password
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">Update your account password for security</p>
+                  </div>
+                </div>
+
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (newPassword !== confirmPassword) {
+                      alert('New passwords do not match!');
+                      return;
+                    }
+                    if (newPassword.length < 6) {
+                      alert('Password must be at least 6 characters long');
+                      return;
+                    }
+                    setPasswordChangeSuccess(true);
+                    setTimeout(() => {
+                      setCurrentPassword('');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                      setPasswordChangeSuccess(false);
+                      alert('Password changed successfully!');
+                    }, 1500);
+                  }}
+                  className="space-y-5"
+                >
+                  <div>
+                    <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                      Current Password <span className="text-red-400">*</span>
+                    </label>
+                    <input 
+                      type="password" 
+                      required
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter your current password"
+                      className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                        New Password <span className="text-red-400">*</span>
+                      </label>
+                      <input 
+                        type="password" 
+                        required
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[var(--text-secondary)] font-mono text-[10px] uppercase font-bold mb-2 block">
+                        Confirm New Password <span className="text-red-400">*</span>
+                      </label>
+                      <input 
+                        type="password" 
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-sm outline-none focus:border-[#E9C349] transition-all" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                    <div className="flex items-start space-x-2">
+                      <AlertTriangle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                      <div className="text-xs text-blue-300">
+                        <strong>Password Requirements:</strong> Minimum 6 characters. Include a mix of letters, numbers, and symbols for better security.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-[var(--border-default)] flex justify-end gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setCurrentPassword('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-[var(--bg-glass)] border border-[var(--border-default)] text-[var(--text-secondary)] font-bold text-xs hover:bg-white/10 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      disabled={passwordChangeSuccess}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {passwordChangeSuccess ? (
+                        <>
+                          <CheckCircle className="w-3.5 h-3.5 animate-pulse" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5" />
+                          Change Password
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* TAB: TRASH / DELETED ITEMS */}
           {activeTab === 'trash' && (
             <div className="space-y-6">
@@ -2904,39 +3134,68 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* MODAL 3: Print Certificate Modal */}
       {selectedCertPrint && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#FAF8F5] text-black border-4 border-[#D4AF37] rounded-3xl p-8 max-w-xl w-full text-center space-y-4 shadow-2xl relative font-serif">
+          <div className="bg-white text-black border-8 border-double border-[#D4AF37] rounded-3xl p-10 max-w-3xl w-full text-center space-y-6 shadow-2xl relative">
             <button
               onClick={() => setSelectedCertPrint(null)}
-              className="absolute top-4 right-4 p-1 text-[var(--text-muted)] hover:text-black"
+              className="absolute top-4 right-4 p-2 text-gray-500 hover:text-black bg-white rounded-full hover:bg-gray-100 transition-all"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="text-sm font-bold text-[#D4AF37] tracking-widest uppercase">Official Qualification Award</div>
-            <h2 className="text-2xl font-bold">DARE BEAUTY & HAIR DRESSING INSTITUTE</h2>
-            <p className="text-xs text-gray-600 font-sans">Addis Ababa, Federal Democratic Republic of Ethiopia</p>
-
-            <div className="my-6 border-t border-b border-[#D4AF37]/40 py-4">
-              <div className="text-xs font-sans text-[var(--text-muted)]">This is to certify that</div>
-              <div className="text-2xl font-bold text-black my-1">{selectedCertPrint.studentName}</div>
-              <div className="text-xs font-sans text-[var(--text-muted)]">has successfully completed the accredited program in</div>
-              <div className="text-lg font-bold text-[#997510] mt-1">{selectedCertPrint.program}</div>
+            {/* Certificate Preview (matching Student Dashboard style) */}
+            <div className="text-[#D4AF37] font-mono text-xs uppercase tracking-widest font-bold">
+              Vocational Diploma Certification
             </div>
 
-            <div className="flex items-center justify-between text-xs font-sans text-gray-600">
-              <div>Serial: <strong className="font-mono text-black">{selectedCertPrint.certNo}</strong></div>
-              <div>Grade: <strong className="text-emerald-700">{selectedCertPrint.grade}</strong></div>
+            <h3 className="text-3xl font-serif font-bold text-black tracking-wide">
+              Dare Women's & Men's Beauty Institute
+            </h3>
+
+            <p className="text-sm text-gray-600 font-serif italic">
+              ደሬ የሴቶች እና የወንዶች የውበት ሙያ ማሰልጠኛ ተቋም
+            </p>
+
+            <p className="text-xs text-gray-600 uppercase tracking-widest mt-6">This is to certify that</p>
+
+            <div className="text-4xl font-serif font-bold text-[#D4AF37] border-b-2 border-[#D4AF37] inline-block px-8 py-2">
+              {selectedCertPrint.studentName}
             </div>
 
-            <div className="pt-4 flex items-center justify-center space-x-3 font-sans">
+            <p className="text-sm text-gray-700 max-w-xl mx-auto leading-relaxed">
+              has successfully fulfilled all academic and practical lab requirements in
+              <br/><strong className="text-black text-base">{selectedCertPrint.program}</strong>
+              <br/>with a final grade evaluation of <strong className="text-emerald-700">{selectedCertPrint.grade}</strong>.
+            </p>
+
+            {/* Verification Section */}
+            <div className="pt-6 border-t border-gray-300 flex items-center justify-between text-xs text-gray-600">
+              <div className="text-left">
+                <div className="font-bold text-[#D4AF37] text-xs mb-1">VERIFICATION CODE</div>
+                <div className="font-mono text-black font-bold">{selectedCertPrint.certNo}</div>
+              </div>
+              <div className="font-serif text-[#D4AF37] font-bold italic text-sm">
+                Verified & Accredited
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-gray-500 text-xs mb-1">ISSUE DATE</div>
+                <div className="font-mono text-black">{selectedCertPrint.issueDate}</div>
+              </div>
+            </div>
+
+            {/* Print Button */}
+            <div className="pt-4 flex items-center justify-center gap-3">
               <button
-                onClick={() => {
-                  window.print();
-                }}
-                className="px-6 py-2.5 rounded-xl bg-[#D4AF37] text-black font-bold text-xs hover:bg-[#E9C349] flex items-center space-x-1"
+                onClick={() => handlePrintCertificate(selectedCertPrint)}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#E9C349] text-black font-bold text-sm hover:brightness-110 flex items-center gap-2 transition-all shadow-lg"
               >
-                <Printer className="w-4 h-4" />
-                <span>Print Certificate</span>
+                <Printer className="w-5 h-5" />
+                Print Certificate
+              </button>
+              <button
+                onClick={() => setSelectedCertPrint(null)}
+                className="px-6 py-3 rounded-xl bg-gray-200 text-gray-700 font-bold text-sm hover:bg-gray-300 transition-all"
+              >
+                Close
               </button>
             </div>
           </div>
