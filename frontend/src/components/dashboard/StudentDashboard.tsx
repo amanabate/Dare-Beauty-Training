@@ -9,7 +9,6 @@ import {
   CalendarCheck,
   Award,
   CreditCard,
-  Bell,
   HelpCircle,
   X,
   Plus,
@@ -65,9 +64,7 @@ type StudentTab =
   | 'grades'
   | 'transcript'
   | 'certificate'
-  | 'payments'
-  | 'announcements'
-  | 'support';
+  | 'payments';
 
 // Mock Student Profile
 const STUDENT_DATA = {
@@ -127,11 +124,6 @@ const ATTENDANCE_HISTORY = [
 const PAYMENT_HISTORY = [
   { id: 'REC-901', date: '2026-01-08', amount: '6,000 ETB', method: 'Telebirr', status: 'Verified & Paid', receiptUrl: '#' },
   { id: 'REC-902', date: '2026-04-05', amount: '6,000 ETB', method: 'CBO Mobile Banking', status: 'Verified & Paid', receiptUrl: '#' }
-];
-
-const ANNOUNCEMENTS = [
-  { id: 'ann-2', title: 'Special Masterclass: Bridal Makeup Trends 2026', date: 'August 10, 2026', body: 'Guest trainer Senior Artist Tsion Abera will conduct a live demonstration in Main Hall B starting 10:00 AM.', category: 'Event' },
-  { id: 'ann-3', title: 'Salon Equipment Model Day', date: 'July 28, 2026', body: 'Students can invite family models for live hair coloring and haircut practical evaluations every Friday afternoon.', category: 'Notice' }
 ];
 
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({
@@ -456,25 +448,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <CreditCard className="w-4 h-4" />
               <span>Tuition & Receipts</span>
             </button>
-
-            <div className="pt-3 px-3 py-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest font-bold">
-              Communication
-            </div>
-
-            <button
-              onClick={() => setActiveTab('announcements')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'announcements'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <Bell className="w-4 h-4" />
-              <span>Announcements</span>
-              <span className="ml-auto font-mono text-[10px] bg-amber-500 text-black px-1.5 py-0.5 rounded-full font-bold">
-                {ANNOUNCEMENTS.length}
-              </span>
-            </button>
           </div>
 
           <div className="pt-3 border-t border-[var(--border-default)] mt-4 space-y-2">
@@ -576,10 +549,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Schedule & Announcements Dual Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Weekly Schedule */}
+              <div className="grid grid-cols-1 gap-6">
                 {/* Upcoming Weekly Schedule */}
-                <div className="lg:col-span-2 p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
+                <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
                   <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center justify-between">
                     <span>Weekly Class & Lab Schedule</span>
                     <button onClick={() => setActiveTab('program')} className="text-xs text-[#E9C349] hover:underline">View Full Details</button>
@@ -595,29 +568,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                         <span className="px-2.5 py-1 rounded-xl bg-white/5 text-[var(--text-secondary)] font-mono text-[10px] shrink-0">
                           {item.room}
                         </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Quick Announcements Widget */}
-                <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
-                  <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center justify-between">
-                    <span>Institute Notices</span>
-                    <Bell className="w-4 h-4 text-[#E9C349]" />
-                  </h3>
-
-                  <div className="space-y-3">
-                    {ANNOUNCEMENTS.map(a => (
-                      <div key={a.id} className="p-3.5 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="px-2 py-0.5 rounded-full bg-[#E9C349]/20 text-[#E9C349] text-[9px] font-mono font-bold">
-                            {a.category}
-                          </span>
-                          <span className="text-[10px] font-mono text-[var(--text-muted)]">{a.date}</span>
-                        </div>
-                        <h4 className="text-xs font-bold text-[var(--text-primary)]">{a.title}</h4>
-                        <p className="text-[11px] text-[var(--text-secondary)] leading-snug line-clamp-2">{a.body}</p>
                       </div>
                     ))}
                   </div>
@@ -1249,30 +1199,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 9: ANNOUNCEMENTS */}
-          {activeTab === 'announcements' && (
-            <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
-                <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Institute Announcements & Notices</h2>
-
-                <div className="space-y-4">
-                  {ANNOUNCEMENTS.map(a => (
-                    <div key={a.id} className="p-5 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-1 rounded-full bg-[#E9C349]/20 text-[#E9C349] font-mono text-xs font-bold">
-                          {a.category}
-                        </span>
-                        <span className="text-xs font-mono text-[var(--text-secondary)]">{a.date}</span>
-                      </div>
-                      <h3 className="text-base font-bold text-[var(--text-primary)]">{a.title}</h3>
-                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{a.body}</p>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           )}

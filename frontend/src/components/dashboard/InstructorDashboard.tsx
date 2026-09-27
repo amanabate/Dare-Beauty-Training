@@ -8,7 +8,6 @@ import {
   BookOpen,
   CalendarCheck,
   Award,
-  Bell,
   X,
   Plus,
   CheckCircle2,
@@ -37,7 +36,6 @@ import {
   Search,
   CheckSquare,
   XSquare,
-  Send,
   BarChart3,
   Calendar,
   Users,
@@ -71,7 +69,6 @@ type InstructorTab =
   | 'grades'
   | 'programs'
   | 'certification'
-  | 'announcements'
   | 'reports';
 
 // Initial Mock Datasets for Instructor
@@ -290,11 +287,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
   const [gradeScoreInput, setGradeScoreInput] = useState('');
   const [gradeCompetencyInput, setGradeCompetencyInput] = useState<CompetencyLevel>('Highly Competent');
   
-  // Post Notice state
-  const [newNoticeTitle, setNewNoticeTitle] = useState('');
-  const [newNoticeBody, setNewNoticeBody] = useState('');
-  const [postedNotices, setPostedNotices] = useState<{ id: string; title: string; body: string; date: string }[]>([]);
-
   // Recommendation state
   const [recommendedStudents, setRecommendedStudents] = useState<string[]>(['REG-2026-005', 'REG-2026-002']);
 
@@ -395,19 +387,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
     setSelectedStudentForGrading(null);
   };
 
-  const handlePostNotice = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newNoticeTitle || !newNoticeBody) return;
-    setPostedNotices(prev => [{
-      id: `notice-${Date.now()}`,
-      title: newNoticeTitle,
-      body: newNoticeBody,
-      date: 'Just now'
-    }, ...prev]);
-    setNewNoticeTitle('');
-    setNewNoticeBody('');
-    alert('Notice broadcasted to all assigned students!');
-  };
 
   const toggleRecommendation = (id: string) => {
     if (recommendedStudents.includes(id)) {
@@ -561,6 +540,17 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             </button>
 
             <button
+              onClick={() => {
+                setActiveTab('grades');
+                setAssessmentModal({ open: true, form: { ...EMPTY_FORM, id: null } });
+              }}
+              className="w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Assessment</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('programs')}
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'programs'
@@ -575,18 +565,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             <div className="pt-3 px-3 py-1 text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest font-bold">
               Communication & Tools
             </div>
-
-            <button
-              onClick={() => setActiveTab('announcements')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'announcements'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <Bell className="w-4 h-4" />
-              <span>Post Class Notices</span>
-            </button>
 
             <button
               onClick={() => setActiveTab('reports')}
@@ -1240,56 +1218,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
                   </div>
                 );
               })()}
-            </div>
-          )}
-
-          {/* TAB 7: ANNOUNCEMENTS */}
-          {activeTab === 'announcements' && (
-            <div className="max-w-2xl mx-auto space-y-6">
-              <form onSubmit={handlePostNotice} className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-4">
-                <h2 className="text-lg font-bold font-serif text-[var(--text-primary)]">Broadcast Class Notice to Students</h2>
-                <div>
-                  <label className="text-[10px] text-[var(--text-secondary)] font-mono uppercase">Notice Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={newNoticeTitle}
-                    onChange={(e) => setNewNoticeTitle(e.target.value)}
-                    placeholder="e.g. Bring Salon Hair dye model on Friday"
-                    className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-xs outline-none focus:border-[#E9C349]"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-[var(--text-secondary)] font-mono uppercase">Notice Instructions</label>
-                  <textarea
-                    required
-                    rows={3}
-                    value={newNoticeBody}
-                    onChange={(e) => setNewNoticeBody(e.target.value)}
-                    placeholder="Write detailed class instructions..."
-                    className="w-full mt-1 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] text-xs outline-none focus:border-[#E9C349]"
-                  />
-                </div>
-                <button type="submit" className="w-full py-2.5 rounded-xl bg-[#E9C349] text-black font-bold text-xs hover:brightness-110 flex items-center justify-center space-x-2">
-                  <Send className="w-4 h-4" />
-                  <span>Broadcast Notice</span>
-                </button>
-              </form>
-
-              {postedNotices.length > 0 && (
-                <div className="p-6 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-3">
-                  <h3 className="text-sm font-bold text-[var(--text-primary)]">Broadcast History</h3>
-                  {postedNotices.map(n => (
-                    <div key={n.id} className="p-3.5 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-subtle)] space-y-1">
-                      <div className="flex justify-between text-[10px] text-[#E9C349] font-mono">
-                        <span>{n.title}</span>
-                        <span>{n.date}</span>
-                      </div>
-                      <p className="text-xs text-[var(--text-secondary)]">{n.body}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
