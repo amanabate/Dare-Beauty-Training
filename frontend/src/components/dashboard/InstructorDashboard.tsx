@@ -66,7 +66,6 @@ type InstructorTab =
   | 'overview'
   | 'schedule'
   | 'students'
-  | 'approved'
   | 'attendance'
   | 'grades'
   | 'addassessment'
@@ -579,21 +578,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
             </button>
 
             <button
-              onClick={() => setActiveTab('approved')}
-              className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
-                activeTab === 'approved'
-                  ? 'bg-[#E9C349] text-black shadow-md font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-              }`}
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Approved Registrations</span>
-              {approvedApplications.length > 0 && (
-                <span className="ml-auto font-mono text-[10px] bg-emerald-500 text-black px-2 py-0.5 rounded-full font-bold">{approvedApplications.length}</span>
-              )}
-            </button>
-
-            <button
               onClick={() => setActiveTab('attendance')}
               className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-all ${
                 activeTab === 'attendance'
@@ -890,96 +874,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({
                   </tbody>
                 </table>
               </div>
-            </div>
-          )}
-
-          {/* TAB 3.5: APPROVED REGISTRATIONS */}
-          {activeTab === 'approved' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Approved Course Registrations</h2>
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    Students who have been approved for the courses you teach: {INSTRUCTOR_DATA.assignedCourses.join(' & ')}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    try {
-                      const savedApps = localStorage.getItem('dare_applications');
-                      if (savedApps) {
-                        const apps = JSON.parse(savedApps);
-                        const approved = apps.filter((app: any) => 
-                          app.status === 'Approved & Registered' &&
-                          INSTRUCTOR_DATA.assignedCourses.some(course => app.program?.includes(course.split('(')[0].trim()))
-                        );
-                        setApprovedApplications(approved);
-                        alert(`Refreshed! Found ${approved.length} approved registration(s) for your courses.`);
-                      }
-                    } catch (error) {
-                      console.error('Refresh failed:', error);
-                    }
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#E9C349] text-black text-xs font-bold hover:brightness-110 transition-all"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Refresh List
-                </button>
-              </div>
-
-              {approvedApplications.length === 0 ? (
-                <div className="p-12 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-default)] text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-default)] flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-8 h-8 text-[var(--text-muted)]" />
-                  </div>
-                  <h3 className="text-base font-bold text-[var(--text-primary)] mb-2">No Approved Registrations Yet</h3>
-                  <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto">
-                    When admin approves applications for your courses ({INSTRUCTOR_DATA.assignedCourses.map(c => c.split('(')[0].trim()).join(', ')}), they will appear here.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {approvedApplications.map((app) => (
-                    <div key={app.id} className="p-5 rounded-3xl bg-[var(--bg-panel)] border border-emerald-500/30 hover:border-emerald-500/50 transition-all space-y-4">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-mono text-[10px] text-[#E9C349] font-bold">{app.id}</span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Approved
-                          </span>
-                        </div>
-
-                        <h3 className="text-base font-bold text-[var(--text-primary)]">{app.name}</h3>
-                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">{app.phone} • {app.email}</p>
-
-                        <div className="mt-3 p-3 rounded-2xl bg-black/40 text-xs space-y-1 font-mono">
-                          <div><span className="text-[var(--text-muted)]">Program:</span> {app.program}</div>
-                          <div><span className="text-[var(--text-muted)]">Duration:</span> {app.duration}</div>
-                          <div><span className="text-[var(--text-muted)]">Shift:</span> {app.shift}</div>
-                          <div><span className="text-[var(--text-muted)]">Approved:</span> {app.date || 'Recently'}</div>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs">
-                        <span className="text-[var(--text-muted)]">
-                          <CheckCircle2 className="w-3.5 h-3.5 inline mr-1 text-emerald-400" />
-                          Ready for class
-                        </span>
-                        <button
-                          className="text-[#E9C349] hover:text-[#F5D468] font-semibold flex items-center gap-1"
-                          onClick={() => {
-                            alert(`${app.name} has been approved and registered. They will appear in your student roster once the admin assigns them to your class sessions.`);
-                          }}
-                        >
-                          <Users className="w-3.5 h-3.5" />
-                          Details
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
